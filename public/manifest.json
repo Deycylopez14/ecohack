@@ -1,0 +1,22 @@
+{
+  "short_name": "EcoHack",
+  "name": "EcoHack - Educación y Reciclaje",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#f5f5f5",
+  "theme_color": "#388e3c",
+  "description": "App ecológica para educación, gamificación y reciclaje.",
+  "orientation": "portrait"
+}
