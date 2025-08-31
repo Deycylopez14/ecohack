@@ -35,30 +35,30 @@ const residuos = [
 
 export default function EducacionContent() {
   return (
-    <Box sx={{ mt: 2 }}>
-      <Typography variant="h5" gutterBottom>Tipos de residuos y cómo separarlos</Typography>
-      <Grid container spacing={3}>
+    <Box sx={{ mt: 2, minHeight: '80vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+      <Typography variant="h5" gutterBottom sx={{ fontWeight: 'bold', color: 'success.main', textAlign: 'center' }}>Tipos de residuos y cómo separarlos</Typography>
+      <Grid container spacing={3} justifyContent="center" alignItems="center" sx={{ width: '100%' }}>
         {residuos.map((r, i) => (
-          <Grid item xs={12} md={6} key={i}>
-            <Card sx={{ boxShadow: 3, borderRadius: 3, transition: 'box-shadow 0.2s', ':hover': { boxShadow: 6 } }}>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Grid item xs={12} md={6} key={i} sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+            <Card sx={{ boxShadow: 3, borderRadius: 3, transition: 'box-shadow 0.2s', ':hover': { boxShadow: 6 }, textAlign: 'center', mx: 'auto', width: '100%', maxWidth: 400, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <CardContent sx={{ width: '100%' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: 'center', width: '100%' }}>
                   <InfoIcon color="primary" />
-                  <Typography variant="h6" color="primary" sx={{ fontWeight: 'bold' }}>{r.tipo}</Typography>
+                  <Typography variant="h6" color="primary" sx={{ fontWeight: 'bold', textAlign: 'center' }}>{r.tipo}</Typography>
                 </Box>
-                <Typography variant="body2" sx={{ mb: 1 }}>{r.descripcion}</Typography>
-                <Typography variant="body2" sx={{ fontStyle: 'italic', color: 'secondary.main' }}>Consejo: {r.consejo}</Typography>
+                <Typography variant="body2" sx={{ mb: 1, textAlign: 'center' }}>{r.descripcion}</Typography>
+                <Typography variant="body2" sx={{ fontStyle: 'italic', color: 'secondary.main', textAlign: 'center' }}>Consejo: {r.consejo}</Typography>
               </CardContent>
               <CardMedia
                 component="img"
                 height="140"
                 image={r.infografia}
                 alt={`Infografía ${r.tipo}`}
-                sx={{ objectFit: 'contain', background: '#f5f5f5' }}
+                sx={{ objectFit: 'contain', background: '#f5f5f5', mx: 'auto', width: '80%' }}
               />
-              <Box sx={{ p: 2 }}>
-                <Typography variant="body2">Video:</Typography>
-                <iframe width="100%" height="180" src={r.video} title={`Video ${r.tipo}`} frameBorder="0" allowFullScreen style={{ borderRadius: 8 }}></iframe>
+              <Box sx={{ p: 2, width: '100%' }}>
+                <Typography variant="body2" sx={{ textAlign: 'center' }}>Video:</Typography>
+                <iframe width="100%" height="180" src={r.video} title={`Video ${r.tipo}`} frameBorder="0" allowFullScreen style={{ borderRadius: 8, display: 'block', margin: '0 auto' }}></iframe>
               </Box>
             </Card>
           </Grid>

@@ -1,4 +1,4 @@
-# EcoBlock
+# EcoHack
 
 Aplicación ecológica PWA para educación ambiental, gamificación y utilidad práctica en la separación de residuos.
 

@@ -14,6 +14,7 @@ import { CssBaseline, ThemeProvider, Container, Box, Typography, Dialog, DialogT
 import theme from './styles/theme';
 import { supabase } from './utils/supabaseClient';
 import NavBar from './components/NavBar';
+import Footer from './components/Footer';
 
 function App() {
   const [session, setSession] = useState(null);
@@ -39,10 +40,12 @@ function App() {
     <ThemeProvider theme={muiTheme}>
       <CssBaseline />
       <Router>
-        <NavBar />
         <Container sx={{ mt: 2 }}>
           <ThemeToggle darkMode={darkMode} setDarkMode={setDarkMode} />
           <PushNotification session={session} />
+          <Box sx={{ mb: 2 }}>
+            <NavBar />
+          </Box>
           <Routes>
             <Route path="/" element={<Home session={session} />} />
             <Route path="/educacion" element={<Educacion />} />
@@ -51,25 +54,26 @@ function App() {
             <Route path="/comunidad" element={<Comunidad session={session} requireAuth={requireAuth} />} />
             <Route path="/perfil" element={session ? <Perfil session={session} darkMode={darkMode} setDarkMode={setDarkMode} /> : <Box sx={{ mt: 4 }}><Typography>Debes registrarte para acceder a tu perfil.</Typography><Button variant="contained" color="primary" onClick={() => requireAuth('Accede a tu perfil y guarda tus logros')}>Registrarse</Button></Box>} />
           </Routes>
+          {session && <LogoutButton onLogout={() => setSession(null)} />}
+          <Dialog open={showAuthDialog} onClose={() => setShowAuthDialog(false)}>
+            <DialogTitle>¡Regístrate gratis!</DialogTitle>
+            <DialogContent>
+              <Typography>{authReason}</Typography>
+              <Typography sx={{ mt: 2, fontWeight: 'bold' }}>Al registrarte podrás:</Typography>
+              <ul>
+                <li>Guardar tus logros y progreso</li>
+                <li>Participar en retos y ranking</li>
+                <li>Canjear puntos y acceder a contenido premium</li>
+                <li>Insignia exclusiva: “Explorador Verde”</li>
+              </ul>
+              <AuthForm onAuth={session => { setSession(session); setShowAuthDialog(false); }} />
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setShowAuthDialog(false)}>Cerrar</Button>
+            </DialogActions>
+          </Dialog>
+          <Footer />
         </Container>
-        {session && <LogoutButton onLogout={() => setSession(null)} />}
-        <Dialog open={showAuthDialog} onClose={() => setShowAuthDialog(false)}>
-          <DialogTitle>¡Regístrate gratis!</DialogTitle>
-          <DialogContent>
-            <Typography>{authReason}</Typography>
-            <Typography sx={{ mt: 2, fontWeight: 'bold' }}>Al registrarte podrás:</Typography>
-            <ul>
-              <li>Guardar tus logros y progreso</li>
-              <li>Participar en retos y ranking</li>
-              <li>Canjear puntos y acceder a contenido premium</li>
-              <li>Insignia exclusiva: “Explorador Verde”</li>
-            </ul>
-            <AuthForm onAuth={session => { setSession(session); setShowAuthDialog(false); }} />
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setShowAuthDialog(false)}>Cerrar</Button>
-          </DialogActions>
-        </Dialog>
       </Router>
     </ThemeProvider>
   );
