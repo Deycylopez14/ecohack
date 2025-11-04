@@ -1,0 +1,17 @@
+[
+  { "id": "t1", "title": "Guía básica de reciclaje", "category": "basicos", "body": "Separa residuos en orgánico, papel/cartón, plástico, vidrio y no reciclables." },
+  { "id": "t2", "title": "El impacto del papel", "category": "papel", "body": "Reutiliza hojas por ambos lados y deposítalas limpias en el contenedor azul." },
+  { "id": "t3", "title": "Plástico: limpia y seca", "category": "plastico", "body": "Enjuaga envases para evitar contaminación del resto de materiales reciclables." },
+  { "id": "t4", "title": "Vidrio siempre reciclable", "category": "vidrio", "body": "Deposita botellas y frascos sin tapas en el contenedor verde." },
+  { "id": "t5", "title": "Orgánico a composta", "category": "organico", "body": "Convierte restos de frutas y verduras en abono casero." },
+  { "id": "t6", "title": "Pilas y electrónicos", "category": "especiales", "body": "Lleva pilas y dispositivos electrónicos a puntos de recolección especiales." },
+  { "id": "t7", "title": "Reduce antes de reciclar", "category": "basicos", "body": "La mejor estrategia es reducir el consumo antes de pensar en reciclar." },
+  { "id": "t8", "title": "Aceite de cocina", "category": "especiales", "body": "Nunca tires aceite por el fregadero, guárdalo en contenedores para reciclaje." },
+  { "id": "t9", "title": "Textiles y ropa", "category": "textiles", "body": "Dona ropa en buen estado o usa contenedores especiales para textiles." },
+  { "id": "t10", "title": "Envases tetra pak", "category": "papel", "body": "Los envases de cartón encerado van al contenedor de papel/cartón." },
+  { "id": "t11", "title": "Metales reciclables", "category": "metal", "body": "Latas de aluminio y acero son 100% reciclables infinitas veces." },
+  { "id": "t12", "title": "Medicamentos vencidos", "category": "especiales", "body": "Lleva medicamentos vencidos a farmacias con programas de recolección." },
+  { "id": "t13", "title": "Compostaje casero", "category": "organico", "body": "Crea tu propio compost con restos vegetales y mejora tu jardín." },
+  { "id": "t14", "title": "Plásticos por número", "category": "plastico", "body": "Revisa el número en el fondo: 1,2,4,5 son más fáciles de reciclar." },
+  { "id": "t15", "title": "Papel contaminado", "category": "papel", "body": "Papel con grasa, pintura o químicos NO es reciclable." }
+]

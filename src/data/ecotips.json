@@ -1,0 +1,7 @@
+[
+  { "id": "t1", "title": "Guía básica de reciclaje", "category": "basicos", "body": "Separa residuos en orgánico, papel/cartón, plástico, vidrio y no reciclables." },
+  { "id": "t2", "title": "El impacto del papel", "category": "papel", "body": "Reutiliza hojas por ambos lados y deposítalas limpias en el contenedor azul." },
+  { "id": "t3", "title": "Plástico: limpia y seca", "category": "plastico", "body": "Enjuaga envases para evitar contaminación del resto de materiales reciclables." },
+  { "id": "t4", "title": "Vidrio siempre reciclable", "category": "vidrio", "body": "Deposita botellas y frascos sin tapas en el contenedor verde." },
+  { "id": "t5", "title": "Orgánico a composta", "category": "organico", "body": "Convierte restos de frutas y verduras en abono casero." }
+]

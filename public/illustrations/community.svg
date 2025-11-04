@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="320" viewBox="0 0 640 320" role="img" aria-label="Comunidad eco">
+  <rect width="640" height="320" fill="#f1f5f9"/>
+  <g fill="#0f766e">
+    <circle cx="160" cy="160" r="26"/>
+    <circle cx="220" cy="140" r="18" opacity="0.8"/>
+    <circle cx="220" cy="180" r="18" opacity="0.8"/>
+  </g>
+  
+</svg>

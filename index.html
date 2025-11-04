@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover" />
+    
+    <!-- PWA Meta Tags -->
+    <meta name="description" content="EcoHack - Aplicación para promover el reciclaje y conciencia ecológica con juegos, mapas y comunidad" />
+    <meta name="keywords" content="reciclaje, ecología, medio ambiente, sostenibilidad, puntos reciclaje, eco tips" />
+    <meta name="author" content="EcoHack Team" />
+    <meta name="theme-color" content="#047857" />
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json" />
+    
+    <!-- iOS PWA -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="EcoHack" />
+    
+    <!-- Material Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+    
+    <!-- Favicons -->
+    <link rel="icon" href="/icons/ecohack.png" type="image/png" />
+    <link rel="apple-touch-icon" href="/icons/ecohack.png" />
+    <link rel="shortcut icon" href="/icons/ecohack.png" />
+    
+    <!-- Open Graph -->
+    <meta property="og:title" content="EcoHack - Aplicación Ecológica" />
+    <meta property="og:description" content="Encuentra centros de reciclaje, aprende eco-tips y juega para cuidar el planeta" />
+    <meta property="og:image" content="/icons/ecohack.png" />
+    <meta property="og:type" content="website" />
+    
+    <!-- Preconnect para mejorar performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    
+    <title>EcoHack - Aplicación Ecológica</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+    
+    <!-- Registro del Service Worker -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then((registration) => {
+              console.log('SW registrado: ', registration);
+            })
+            .catch((registrationError) => {
+              console.log('SW falló: ', registrationError);
+            });
+        });
+      }
+    </script>
+  </body>
+</html>

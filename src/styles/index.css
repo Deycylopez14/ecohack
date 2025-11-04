@@ -1,0 +1,362 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Tokens base y paleta accesible (WCAG AA/AAA) */
+:root {
+  --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+  --font-size-base: 18px;
+
+  /* Fondos y superficies (modo claro) */
+  --color-bg: #f3f4f6;           /* gris 100 suave para reducir brillo */
+  --color-surface: #ffffff;      /* tarjetas/superficies */
+  --color-border: #d1d5db;       /* gris 300 */
+
+  /* Colores de marca */
+  --color-primary: #047857;      /* Verde primario AAA */
+  --color-secondary: #0e7490;    /* Cyan secundario AAA */
+  --color-accent: #164e63;       /* Cyan oscuro (acento) AAA */
+
+  /* Texto */
+  --color-text: #111827;         /* principal (AAA) */
+  --color-text-secondary: #374151;/* secundario (AAA) */
+  --color-text-tertiary: #6b7280;/* terciario (AA) para textos no críticos */
+
+  /* Estados */
+  --color-success: #15803d;      /* ✓ AAA */
+  --color-warning: #b45309;      /* ✓ AAA */
+  --color-error: #b91c1c;        /* ✓ AAA */
+  --color-info: #1e40af;         /* ✓ AAA */
+
+  /* Contraste sobre fondos de color */
+  --color-on-primary: #ffffff;
+  --color-on-secondary: #ffffff;
+  --color-on-accent: #ffffff;
+  --color-on-success: #ffffff;
+  --color-on-warning: #ffffff;
+  --color-on-error: #ffffff;
+  --color-on-info: #ffffff;
+}
+
+/* Modo oscuro accesible (activa con class="dark" en <html>) */
+.dark {
+  --color-bg: #111827;           /* gris 800 */
+  --color-surface: #1f2937;      /* gris 700 */
+  --color-border: #334155;       /* slate 700 */
+
+  /* Colores de marca (se mantienen, contrastados con texto blanco) */
+  --color-primary: #047857;
+  --color-secondary: #0e7490;
+  --color-accent: #164e63;
+
+  /* Texto */
+  --color-text: #f3f4f6;         /* casi blanco */
+  --color-text-secondary: #cbd5e1;/* slate 300 */
+  --color-text-tertiary: #94a3b8; /* slate 400 */
+
+  /* Estados (sin cambios, se usan con texto blanco) */
+  --color-success: #15803d;
+  --color-warning: #b45309;
+  --color-error: #b91c1c;
+  --color-info: #1e40af;
+
+  /* Contrastes sobre fondos de color */
+  --color-on-primary: #ffffff;
+  --color-on-secondary: #ffffff;
+  --color-on-accent: #ffffff;
+  --color-on-success: #ffffff;
+  --color-on-warning: #ffffff;
+  --color-on-error: #ffffff;
+  --color-on-info: #ffffff;
+}
+
+html {
+  font-family: var(--font-sans);
+  font-size: var(--font-size-base);
+  background: var(--color-bg);
+  color: var(--color-text);
+  /* Soporte para notch en iPhone X+ */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* Prevenir zoom en doble tap en iOS */
+  touch-action: manipulation;
+}
+
+main {
+  min-height: calc(100vh - 64px);
+  padding-bottom: 72px;
+  overflow-y: auto;
+}
+
+/* === RESPONSIVE BREAKPOINTS === */
+
+/* Móviles pequeños (320px - 480px) */
+@media (max-width: 480px) {
+  html {
+    font-size: 14px;
+  }
+  
+  main {
+    padding-bottom: 80px;
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+  
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  
+  /* NavBar más compacto en móviles pequeños */
+  .nav-item {
+    font-size: 0.6rem;
+  }
+  
+  .nav-icon {
+    font-size: 1.2rem !important;
+  }
+}
+
+/* Móviles medianos (481px - 640px) */
+@media (min-width: 481px) and (max-width: 640px) {
+  html {
+    font-size: 16px;
+  }
+  
+  main {
+    padding-bottom: 80px;
+  }
+}
+
+/* Tablets (641px - 1024px) */
+@media (min-width: 641px) and (max-width: 1024px) {
+  html {
+    font-size: 17px;
+  }
+  
+  main {
+    padding-bottom: 72px;
+    max-width: 768px;
+    margin: 0 auto;
+  }
+  
+  /* NavBar horizontal en tablets */
+  .nav-horizontal {
+    position: fixed;
+    top: 0;
+    bottom: auto;
+    height: auto;
+    padding: 1rem;
+    flex-direction: row;
+    box-shadow: 0 2px 8px 0 rgba(0,0,0,0.12);
+  }
+  
+  .nav-horizontal .nav-item {
+    flex-direction: row;
+    gap: 0.5rem;
+  }
+}
+
+/* Desktop (1025px+) */
+@media (min-width: 1025px) {
+  html {
+    font-size: 18px;
+  }
+  
+  main {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding-bottom: 2rem;
+  }
+  
+  /* Layout de escritorio con sidebar */
+  .desktop-layout {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    gap: 2rem;
+    min-height: 100vh;
+  }
+  
+  .sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 240px;
+    height: 100vh;
+    padding: 2rem 1rem;
+    background: var(--color-surface);
+    border-right: 1px solid var(--color-border);
+  }
+  
+  .main-content {
+    margin-left: 240px;
+    padding: 2rem;
+  }
+}
+
+/* === ORIENTACIÓN === */
+@media (orientation: landscape) and (max-height: 500px) {
+  /* Landscape en móviles - ocultar elementos no esenciales */
+  .hide-landscape {
+    display: none;
+  }
+  
+  main {
+    padding-bottom: 60px;
+  }
+}
+
+/* === COMPONENTES RESPONSIVOS === */
+
+/* Estilos específicos para Leaflet */
+.leaflet-container {
+  height: 100%;
+  width: 100%;
+  z-index: 1;
+}
+
+.leaflet-control-container {
+  z-index: 1000;
+}
+
+.leaflet-popup-content-wrapper {
+  border-radius: 8px;
+  max-width: 90vw;
+}
+
+.leaflet-popup-content {
+  margin: 8px 12px;
+  line-height: 1.4;
+  max-width: 280px;
+}
+
+/* Mapa responsive */
+.map-container {
+  height: 40vh;
+  min-height: 300px;
+  width: 100%;
+  position: relative;
+}
+
+@media (max-width: 640px) {
+  .map-container {
+    height: 35vh;
+    min-height: 250px;
+  }
+  
+  .leaflet-popup-content {
+    max-width: 240px;
+  }
+}
+
+@media (min-width: 1025px) {
+  .map-container {
+    height: 60vh;
+    min-height: 500px;
+  }
+}
+
+/* === GRIDS RESPONSIVOS === */
+.responsive-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+@media (max-width: 640px) {
+  .responsive-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+@media (min-width: 768px) {
+  .stats-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .stats-grid {
+    gap: 0.5rem;
+  }
+}
+
+/* === BOTONES RESPONSIVOS === */
+.btn {
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  transition: all 0.2s;
+  min-height: 44px; /* Accesibilidad táctil */
+  min-width: 44px;
+}
+
+@media (max-width: 480px) {
+  .btn {
+    padding: 0.625rem 1.25rem;
+    font-size: 0.875rem;
+  }
+}
+
+/* === INPUTS RESPONSIVOS === */
+.input {
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  min-height: 44px;
+  font-size: 1rem;
+}
+
+@media (max-width: 480px) {
+  .input {
+    padding: 0.625rem;
+    font-size: 16px; /* Prevenir zoom en iOS */
+  }
+}
+
+/* === ACCESIBILIDAD === */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+  }
+}
+
+/* === PRINT STYLES === */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  main {
+    padding-bottom: 0;
+  }
+  
+  .nav {
+    display: none;
+  }
+}

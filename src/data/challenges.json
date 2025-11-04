@@ -1,0 +1,82 @@
+[
+  {
+    "id": "reto-1",
+    "title": "Primer Reciclaje",
+    "description": "Completa tu primer clasificación correcta",
+    "points": 50,
+    "tipo": "basico",
+    "completed": false
+  },
+  {
+    "id": "reto-2", 
+    "title": "Explorador Eco",
+    "description": "Visita 3 puntos de reciclaje en el mapa",
+    "points": 100,
+    "tipo": "exploracion",
+    "completed": false
+  },
+  {
+    "id": "reto-3",
+    "title": "Maestro del Quiz",
+    "description": "Responde 10 preguntas correctamente en Educación",
+    "points": 150,
+    "tipo": "educacion",
+    "completed": false
+  },
+  {
+    "id": "reto-4",
+    "title": "Clasificador Expert",
+    "description": "Consigue más de 80 puntos en el juego Clasificador",
+    "points": 200,
+    "tipo": "juegos",
+    "completed": false
+  },
+  {
+    "id": "reto-5",
+    "title": "Aventurero Verde",
+    "description": "Recoge 20 botellas en Aventura Eco",
+    "points": 175,
+    "tipo": "juegos",
+    "completed": false
+  },
+  {
+    "id": "reto-6",
+    "title": "Comunicador Ecológico",
+    "description": "Publica 3 posts en la comunidad ecológica",
+    "points": 125,
+    "tipo": "comunidad",
+    "completed": false
+  },
+  {
+    "id": "reto-7",
+    "title": "Lector Verde",
+    "description": "Lee 10 EcoTips diferentes",
+    "points": 75,
+    "tipo": "educacion",
+    "completed": false
+  },
+  {
+    "id": "reto-8",
+    "title": "Eco Warrior",
+    "description": "Acumula 1000 puntos totales",
+    "points": 500,
+    "tipo": "meta",
+    "completed": false
+  },
+  {
+    "id": "reto-9",
+    "title": "Semana Verde",
+    "description": "Ingresa a la app 7 días consecutivos",
+    "points": 300,
+    "tipo": "habito",
+    "completed": false
+  },
+  {
+    "id": "reto-10",
+    "title": "Campeón del Reciclaje",
+    "description": "Completa todos los mini-juegos disponibles",
+    "points": 250,
+    "tipo": "juegos",
+    "completed": false
+  }
+]

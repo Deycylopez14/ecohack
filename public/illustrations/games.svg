@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="320" viewBox="0 0 640 320" role="img" aria-label="Juegos ecológicos">
+  <rect width="640" height="320" fill="#e5f9f7"/>
+  <rect x="70" y="90" width="160" height="140" rx="20" fill="#22d3ee"/>
+  <circle cx="120" cy="160" r="16" fill="#fbbf24"/>
+  <circle cx="180" cy="160" r="16" fill="#0ea5e9"/>
+  
+</svg>
