@@ -42,11 +42,36 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
       
       if (userProfile) {
         console.log('✅ Perfil cargado desde BD:', userProfile.points, 'puntos')
-        setProfile(userProfile)
+        
+        // Obtener datos adicionales desde localStorage si están disponibles
+        const userId = userProfile.user_id || 'default'
+        const profileKey = `profileData_${userId}`
+        const savedProfileData = localStorage.getItem(profileKey)
+        
+        let fullName = userProfile.full_name
+        if (savedProfileData) {
+          try {
+            const localData = JSON.parse(savedProfileData)
+            // Priorizar el nombre guardado localmente si es más reciente
+            if (localData.fullName && localData.fullName.trim() !== '') {
+              fullName = localData.fullName
+              console.log('📋 Usando nombre desde localStorage:', fullName)
+            }
+          } catch (error) {
+            console.log('Error parsing local profile data:', error)
+          }
+        }
+        
+        // Actualizar profile con datos combinados
+        const updatedProfile = {
+          ...userProfile,
+          full_name: fullName
+        }
+        
+        setProfile(updatedProfile)
         setTotalPoints(userProfile.points)
         
         // Sincronizar con localStorage
-        const userId = userProfile.user_id || 'default'
         localStorage.setItem(`totalPoints_${userId}`, userProfile.points.toString())
       } else {
         // Fallback a localStorage si no hay conexión
@@ -64,23 +89,87 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
   // Función auxiliar para cargar desde localStorage
   const loadFromLocalStorage = async () => {
     try {
-      // Intentar obtener userId desde auth
-      let userId = 'default'
+      // Sistema robusto de identificación de usuario para cross-device
+      let userId = 'ecohack_user_default'
+      let userInfo = null
+      
       try {
         const { supabase } = await import('../lib/supabase')
         const { data } = await supabase.auth.getUser()
         if (data.user?.email) {
           userId = data.user.email
+          userInfo = data.user
         } else if (data.user?.id) {
           userId = data.user.id
+          userInfo = data.user
         }
       } catch (authError) {
-        console.log('No se pudo obtener usuario, usando default')
+        console.log('No se pudo obtener usuario desde auth, usando fallback')
       }
 
-      const localKey = `totalPoints_${userId}`
-      const savedPoints = localStorage.getItem(localKey)
-      
+      // Buscar datos en múltiples keys posibles para máxima compatibilidad
+      const possibleKeys = [
+        `totalPoints_${userId}`,
+        userInfo?.email ? `totalPoints_${userInfo.email}` : null,
+        userInfo?.id ? `totalPoints_${userInfo.id}` : null,
+        'totalPoints_ecohack_user_default',
+        'totalPoints_default'
+      ].filter(Boolean)
+
+      const possibleProfileKeys = [
+        `profileData_${userId}`,
+        userInfo?.email ? `profileData_${userInfo.email}` : null,
+        userInfo?.id ? `profileData_${userInfo.id}` : null,
+        'profileData_ecohack_user_default',
+        'profileData_default'
+      ].filter(Boolean)
+
+      let savedPoints = null
+      let foundPointsKey = null
+      let profileData = null
+      let foundProfileKey = null
+
+      // Buscar puntos en cualquier key posible
+      for (const key of possibleKeys) {
+        const points = localStorage.getItem(key as string)
+        if (points !== null) {
+          savedPoints = points
+          foundPointsKey = key
+          console.log(`📱 Puntos encontrados en key: ${key}`)
+          break
+        }
+      }
+
+      // Buscar datos de perfil en cualquier key posible
+      for (const key of possibleProfileKeys) {
+        const data = key ? localStorage.getItem(key as string) : null
+        if (data !== null) {
+          try {
+            profileData = JSON.parse(data)
+            foundProfileKey = key
+            console.log(`📋 Datos de perfil encontrados en key: ${key}`, profileData)
+            break
+          } catch (error) {
+            console.log(`Error parsing profile data from key ${key}:`, error)
+          }
+        }
+      }
+
+      // Migrar datos a key principal si se encontraron en otras keys
+      const mainPointsKey = `totalPoints_${userId}`
+      const mainProfileKey = `profileData_${userId}`
+
+      if (savedPoints && foundPointsKey !== mainPointsKey) {
+        localStorage.setItem(mainPointsKey, savedPoints)
+        console.log(`🔄 Puntos migrados de ${foundPointsKey} a ${mainPointsKey}`)
+      }
+
+      if (profileData && foundProfileKey !== mainProfileKey) {
+        localStorage.setItem(mainProfileKey, JSON.stringify(profileData))
+        console.log(`🔄 Perfil migrado de ${foundProfileKey} a ${mainProfileKey}`)
+      }
+
+      // Configurar estado con datos encontrados
       if (savedPoints) {
         const points = parseInt(savedPoints, 10)
         console.log(`📱 Cargando ${points} puntos desde localStorage`)
@@ -88,17 +177,46 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
         setProfile({
           id: userId,
           user_id: userId,
-          full_name: `Usuario EcoHack`,
+          full_name: profileData?.fullName || `Usuario EcoHack`,
           points: points,
           created_at: new Date().toISOString()
         })
       } else {
         console.log('📱 No hay puntos guardados localmente, iniciando en 0')
         setTotalPoints(0)
+        // Crear perfil básico incluso sin puntos
+        setProfile({
+          id: userId,
+          user_id: userId,
+          full_name: profileData?.fullName || `Usuario EcoHack`,
+          points: 0,
+          created_at: new Date().toISOString()
+        })
       }
+
+      // Intentar sincronizar con sessionStorage para consistencia cross-tab
+      try {
+        if (savedPoints) {
+          sessionStorage.setItem(`totalPoints_${userId}`, savedPoints)
+        }
+        if (profileData) {
+          sessionStorage.setItem(`profileData_${userId}`, JSON.stringify(profileData))
+        }
+        console.log('🔄 Datos sincronizados con sessionStorage')
+      } catch (sessionError) {
+        console.log('⚠️ No se pudo sincronizar con sessionStorage:', sessionError)
+      }
+
     } catch (error) {
       console.error('Error loading from localStorage:', error)
       setTotalPoints(0)
+      setProfile({
+        id: 'ecohack_user_default',
+        user_id: 'ecohack_user_default',
+        full_name: 'Usuario EcoHack',
+        points: 0,
+        created_at: new Date().toISOString()
+      })
     }
   }
 
@@ -158,6 +276,36 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
   // Cargar perfil inicial
   useEffect(() => {
     refreshProfile()
+  }, [])
+
+  // Listener para sincronización cross-tab y cross-device
+  useEffect(() => {
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key?.includes('profileData_') || event.key?.includes('totalPoints_')) {
+        console.log('🔄 Detectado cambio en localStorage, sincronizando...', event.key)
+        setTimeout(() => {
+          refreshProfile()
+        }, 500) // Delay para evitar conflictos de escritura
+      }
+    }
+
+    // Listener para cambios en localStorage desde otras pestañas
+    window.addEventListener('storage', handleStorageChange)
+
+    // Listener personalizado para cambios en la misma pestaña
+    const handleCustomStorageEvent = (event: CustomEvent) => {
+      console.log('🔄 Evento personalizado de storage detectado:', event.detail)
+      setTimeout(() => {
+        refreshProfile()
+      }, 500)
+    }
+
+    window.addEventListener('localStorageUpdate', handleCustomStorageEvent as EventListener)
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange)
+      window.removeEventListener('localStorageUpdate', handleCustomStorageEvent as EventListener)
+    }
   }, [])
 
   // Actualizar automáticamente cada 30 segundos cuando hay actividad

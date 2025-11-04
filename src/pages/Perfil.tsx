@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import Button from '../components/Button'
 import { useNavigate } from 'react-router-dom'
 import { useGamification } from '../contexts/GamificationContext'
+import { getDeviceInfo, applyDeviceOptimizations } from '../utils/deviceUtils'
 
 // Componente Toast simple para mostrar notificaciones
 const Toast: React.FC<{
@@ -54,6 +55,7 @@ export default function Perfil() {
   const [uploadingPicture, setUploadingPicture] = React.useState(false)
   const [toast, setToast] = React.useState<{message: string, type: 'success' | 'error'} | null>(null)
   const [showPhotoMenu, setShowPhotoMenu] = React.useState(false)
+  const [deviceInfo] = React.useState(() => getDeviceInfo())
   const [editData, setEditData] = React.useState({
     fullName: '',
     bio: '',
@@ -61,63 +63,120 @@ export default function Perfil() {
     interests: ''
   })
 
+  // Aplicar optimizaciones de dispositivo al montar el componente
+  React.useEffect(() => {
+    applyDeviceOptimizations()
+  }, [])
+
   React.useEffect(() => {
     const load = async () => {
-      const { data } = await supabase.auth.getUser()
-      const u = data.user
-      if (!u) {
-        return
-      }
-      setUserEmail(u.email ?? null)
-      
-      // Usar userId consistente (profile.user_id o email como fallback)
-      const userId = profile?.user_id || u.email || 'default'
-      
-      // Cargar datos del perfil desde localStorage primero
-      const localProfileKey = `profileData_${userId}`
-      const savedProfileData = localStorage.getItem(localProfileKey)
-      
-      if (savedProfileData) {
-        try {
-          const localData = JSON.parse(savedProfileData)
-          console.log('📋 Cargando datos de perfil desde localStorage:', localData)
+      try {
+        const { data } = await supabase.auth.getUser()
+        const u = data.user
+        if (!u) {
+          return
+        }
+        setUserEmail(u.email ?? null)
+        
+        // Usar userId consistente con múltiples fallbacks para compatibilidad cross-device
+        const userId = profile?.user_id || u.email || u.id || 'ecohack_user_default'
+        console.log('👤 Usuario identificado:', userId)
+        
+        // Intentar cargar desde múltiples keys posibles (para compatibilidad cross-device)
+        const possibleKeys = [
+          `profileData_${userId}`,
+          `profileData_${u.email}`,
+          `profileData_${u.id}`,
+          `profileData_${profile?.user_id}`,
+          'profileData_ecohack_user_default'
+        ].filter(Boolean)
+        
+        let localData = null
+        let foundKey = null
+        
+        // Buscar datos en cualquier key posible
+        for (const key of possibleKeys) {
+          const savedData = localStorage.getItem(key)
+          if (savedData) {
+            try {
+              localData = JSON.parse(savedData)
+              foundKey = key
+              console.log('📋 Datos encontrados en key:', key, localData)
+              break
+            } catch (error) {
+              console.log('Error parsing data from key:', key, error)
+            }
+          }
+        }
+        
+        // Establecer datos del perfil
+        if (localData) {
           setEditData({
             fullName: localData.fullName || '',
             bio: localData.bio || 'Comprometido con el medio ambiente 🌱',
             location: localData.location || 'Ciudad de México',
             interests: localData.interests || 'Reciclaje, Compostaje, Energía Solar'
           })
-        } catch (error) {
-          console.log('Error parsing local profile data:', error)
+          
+          // Migrar datos a la key principal si se encontraron en otra key
+          const mainKey = `profileData_${userId}`
+          if (foundKey !== mainKey) {
+            localStorage.setItem(mainKey, JSON.stringify(localData))
+            console.log('🔄 Datos migrados a key principal:', mainKey)
+          }
         }
-      }
-      
-      // Si hay profile de Supabase, usar esos datos (tiene prioridad)
-      if (profile) {
-        setEditData(prev => ({
-          ...prev,
-          fullName: profile.full_name || prev.fullName
-        }))
-      }
-      
-      // Si no hay datos locales ni de Supabase, usar valores por defecto
-      if (!savedProfileData && !profile) {
+        
+        // Si hay profile de Supabase, usar esos datos (tiene prioridad)
+        if (profile?.full_name) {
+          setEditData(prev => ({
+            ...prev,
+            fullName: profile.full_name || prev.fullName
+          }))
+        }
+        
+        // Si no hay datos locales ni de Supabase, usar valores por defecto
+        if (!localData && !profile?.full_name) {
+          setEditData({
+            fullName: '',
+            bio: 'Comprometido con el medio ambiente 🌱',
+            location: 'Ciudad de México',
+            interests: 'Reciclaje, Compostaje, Energía Solar'
+          })
+        }
+        
+        // Cargar foto de perfil con sistema robusto cross-device
+        const possiblePictureKeys = [
+          `profilePicture_${userId}`,
+          `profilePicture_${u.email}`,
+          `profilePicture_${u.id}`,
+          `profilePicture_${profile?.user_id}`,
+          'profilePicture_ecohack_user_default'
+        ].filter(Boolean)
+        
+        for (const key of possiblePictureKeys) {
+          const savedPicture = localStorage.getItem(key)
+          if (savedPicture) {
+            console.log('📷 Foto encontrada en key:', key)
+            setProfilePicture(savedPicture)
+            
+            // Migrar foto a key principal si se encontró en otra
+            const mainPictureKey = `profilePicture_${userId}`
+            if (key !== mainPictureKey) {
+              localStorage.setItem(mainPictureKey, savedPicture)
+              console.log('🔄 Foto migrada a key principal:', mainPictureKey)
+            }
+            break
+          }
+        }
+      } catch (error) {
+        console.error('❌ Error en carga inicial:', error)
+        // Fallback básico en caso de error
         setEditData({
           fullName: '',
           bio: 'Comprometido con el medio ambiente 🌱',
           location: 'Ciudad de México',
           interests: 'Reciclaje, Compostaje, Energía Solar'
         })
-      }
-      
-      // Cargar foto de perfil desde localStorage (funciona con o sin profile)
-      const storageKey = `profilePicture_${userId}`
-      const savedPicture = localStorage.getItem(storageKey)
-      if (savedPicture) {
-        console.log('📷 Cargando foto desde localStorage para:', userId)
-        setProfilePicture(savedPicture)
-      } else {
-        console.log('📷 No se encontró foto guardada para:', userId)
       }
     }
     load()
@@ -198,6 +257,34 @@ export default function Perfil() {
     console.log('💾 Guardando perfil...', editData)
     
     try {
+      // Obtener userId de manera robusta para cross-device
+      let userId = 'ecohack_user_default'
+      let userIdentifier = null
+      
+      try {
+        const { data } = await supabase.auth.getUser()
+        if (data.user?.email) {
+          userId = data.user.email
+          userIdentifier = data.user
+        } else if (data.user?.id) {
+          userId = data.user.id
+          userIdentifier = data.user
+        } else if (profile?.user_id) {
+          userId = profile.user_id
+        } else if (userEmail) {
+          userId = userEmail
+        }
+      } catch (authError) {
+        console.log('Error obteniendo usuario, usando fallbacks')
+        if (profile?.user_id) {
+          userId = profile.user_id
+        } else if (userEmail) {
+          userId = userEmail
+        }
+      }
+      
+      console.log('👤 Guardando para usuario:', userId)
+      
       // Intentar guardar en Supabase si está disponible
       if (profile?.user_id) {
         console.log('🔄 Intentando guardar en Supabase...')
@@ -210,25 +297,67 @@ export default function Perfil() {
           console.log('⚠️ Error de Supabase, guardando localmente:', error.message)
         } else {
           console.log('✅ Guardado en Supabase exitoso')
-          // Refrescar el perfil para obtener los datos actualizados
-          await refreshProfile()
         }
       } else {
         console.log('📝 Profile no disponible, guardando solo localmente')
       }
 
-      // SIEMPRE guardar localmente como respaldo
-      const userId = profile?.user_id || userEmail || 'ecohack_user'
+      // SIEMPRE guardar localmente en múltiples keys para compatibilidad cross-device
       const localProfileData = {
         fullName: editData.fullName,
         bio: editData.bio,
         location: editData.location,
         interests: editData.interests,
-        lastUpdated: new Date().toISOString()
+        lastUpdated: new Date().toISOString(),
+        deviceInfo: {
+          userAgent: navigator.userAgent,
+          timestamp: Date.now(),
+          platform: navigator.platform
+        }
       }
       
-      localStorage.setItem(`profileData_${userId}`, JSON.stringify(localProfileData))
-      console.log('💾 Datos guardados localmente para:', userId)
+      // Guardar en key principal
+      const mainKey = `profileData_${userId}`
+      localStorage.setItem(mainKey, JSON.stringify(localProfileData))
+      console.log('💾 Datos guardados en key principal:', mainKey)
+      
+      // Guardar también en keys alternativas para máxima compatibilidad
+      const alternativeKeys = []
+      if (userIdentifier?.email && userIdentifier.email !== userId) {
+        alternativeKeys.push(`profileData_${userIdentifier.email}`)
+      }
+      if (userIdentifier?.id && userIdentifier.id !== userId) {
+        alternativeKeys.push(`profileData_${userIdentifier.id}`)
+      }
+      if (profile?.user_id && profile.user_id !== userId) {
+        alternativeKeys.push(`profileData_${profile.user_id}`)
+      }
+      
+      alternativeKeys.forEach(key => {
+        localStorage.setItem(key, JSON.stringify(localProfileData))
+        console.log('💾 Datos también guardados en:', key)
+      })
+      
+      // Intentar sincronizar con sessionStorage para consistencia cross-tab
+      try {
+        sessionStorage.setItem(`profileData_${userId}`, JSON.stringify(localProfileData))
+        console.log('🔄 Datos sincronizados con sessionStorage')
+      } catch (sessionError) {
+        console.log('⚠️ No se pudo sincronizar con sessionStorage:', sessionError)
+      }
+      
+      // Disparar evento personalizado para sincronización cross-component
+      window.dispatchEvent(new CustomEvent('localStorageUpdate', {
+        detail: {
+          type: 'profileUpdate',
+          userId: userId,
+          data: localProfileData
+        }
+      }))
+      
+      // REFRESCAR PERFIL para que se actualice en todos los componentes
+      await refreshProfile()
+      console.log('🔄 Perfil refrescado después de guardar')
       
       // Cerrar modal y mostrar notificación de éxito
       setIsEditing(false)
@@ -236,6 +365,11 @@ export default function Perfil() {
         message: '✅ Perfil actualizado correctamente', 
         type: 'success' 
       })
+
+      // Forzar re-render de componentes que dependen del contexto
+      setTimeout(() => {
+        refreshProfile()
+      }, 1000)
 
     } catch (error) {
       console.error('❌ Error al guardar perfil:', error)
@@ -699,8 +833,21 @@ export default function Perfil() {
                   </div>
                 </div>
                 <div className="flex gap-2 mt-3 sm:mt-0">
-                  <Button size="sm" onClick={() => setIsEditing(true)}>✏️ Editar</Button>
-                  <Button size="sm" variant="outline" onClick={onLogout}>Cerrar sesión</Button>
+                  <Button 
+                    size={deviceInfo.isMobile ? "md" : "sm"} 
+                    onClick={() => setIsEditing(true)}
+                    className="touch-manipulation"
+                  >
+                    ✏️ Editar
+                  </Button>
+                  <Button 
+                    size={deviceInfo.isMobile ? "md" : "sm"} 
+                    variant="outline" 
+                    onClick={onLogout}
+                    className="touch-manipulation"
+                  >
+                    Cerrar sesión
+                  </Button>
                 </div>
               </div>
             </div>
@@ -838,36 +985,55 @@ export default function Perfil() {
 
       {/* Modal de edición */}
       {isEditing && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-2 sm:p-4 z-50">
           <div 
-            className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-md max-h-[90vh] flex flex-col" 
+            className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-md max-h-[95vh] sm:max-h-[90vh] flex flex-col" 
             style={{ background: 'var(--color-surface)' }}
           >
             {/* Header fijo del modal */}
-            <div className="p-6 border-b" style={{ borderColor: 'var(--color-border)' }}>
+            <div className="p-4 sm:p-6 border-b flex items-center justify-between" style={{ borderColor: 'var(--color-border)' }}>
               <h3 className="font-bold text-lg">✏️ Editar Perfil</h3>
+              {/* Botón X para cerrar en móviles */}
+              <button
+                onClick={() => setIsEditing(false)}
+                className="sm:hidden p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                aria-label="Cerrar modal"
+              >
+                <span className="text-xl">×</span>
+              </button>
             </div>
             
             {/* Contenido scrolleable */}
-            <div className="flex-1 overflow-y-auto p-6">
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6">
               <div className="space-y-4">
                 {/* Información básica del perfil */}
                 <div>
                   <label className="block text-sm font-medium mb-1">Nombre completo</label>
                   <input
                     type="text"
-                    className="w-full p-2 border rounded-lg text-sm"
-                    style={{ background: 'var(--color-bg)', borderColor: 'var(--color-border)', color: 'var(--color-text)' }}
+                    className="w-full p-3 sm:p-2 border rounded-lg text-sm touch-manipulation"
+                    style={{ 
+                      background: 'var(--color-bg)', 
+                      borderColor: 'var(--color-border)', 
+                      color: 'var(--color-text)',
+                      fontSize: '16px' // Evita zoom en iOS
+                    }}
                     value={editData.fullName}
                     onChange={(e) => setEditData({...editData, fullName: e.target.value})}
                     placeholder="Tu nombre completo"
+                    autoComplete="name"
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">Bio</label>
                   <textarea
-                    className="w-full p-2 border rounded-lg h-20"
-                    style={{ background: 'var(--color-bg)', borderColor: 'var(--color-border)', color: 'var(--color-text)' }}
+                    className="w-full p-3 sm:p-2 border rounded-lg h-20 touch-manipulation"
+                    style={{ 
+                      background: 'var(--color-bg)', 
+                      borderColor: 'var(--color-border)', 
+                      color: 'var(--color-text)',
+                      fontSize: '16px' // Evita zoom en iOS
+                    }}
                     value={editData.bio}
                     onChange={(e) => setEditData({...editData, bio: e.target.value})}
                     placeholder="Describe tu compromiso con el medio ambiente..."
@@ -876,8 +1042,13 @@ export default function Perfil() {
                 <div>
                   <label className="block text-sm font-medium mb-1">Ubicación</label>
                   <select
-                    className="w-full p-2 border rounded-lg"
-                    style={{ background: 'var(--color-bg)', borderColor: 'var(--color-border)', color: 'var(--color-text)' }}
+                    className="w-full p-3 sm:p-2 border rounded-lg touch-manipulation"
+                    style={{ 
+                      background: 'var(--color-bg)', 
+                      borderColor: 'var(--color-border)', 
+                      color: 'var(--color-text)',
+                      fontSize: '16px' // Evita zoom en iOS
+                    }}
                     value={editData.location}
                     onChange={(e) => setEditData({...editData, location: e.target.value})}
                   >
@@ -886,6 +1057,12 @@ export default function Perfil() {
                     <option value="Guadalajara, México">🇲🇽 Guadalajara, México</option>
                     <option value="Monterrey, México">🇲🇽 Monterrey, México</option>
                     <option value="Puebla, México">🇲🇽 Puebla, México</option>
+                    <option value="Tijuana, México">🇲🇽 Tijuana, México</option>
+                    <option value="León, México">🇲🇽 León, México</option>
+                    <option value="Juárez, México">🇲🇽 Juárez, México</option>
+                    <option value="Zapopan, México">🇲🇽 Zapopan, México</option>
+                    <option value="Mérida, México">🇲🇽 Mérida, México</option>
+                    <option value="San Luis Potosí, México">🇲🇽 San Luis Potosí, México</option>
                   </select>
                 </div>
                 <div>
@@ -893,8 +1070,13 @@ export default function Perfil() {
                   <input
                     type="text"
                     placeholder="Reciclaje, Compostaje, Energía Solar..."
-                    className="w-full p-2 border rounded-lg text-sm"
-                    style={{ background: 'var(--color-bg)', borderColor: 'var(--color-border)', color: 'var(--color-text)' }}
+                    className="w-full p-3 sm:p-2 border rounded-lg text-sm touch-manipulation"
+                    style={{ 
+                      background: 'var(--color-bg)', 
+                      borderColor: 'var(--color-border)', 
+                      color: 'var(--color-text)',
+                      fontSize: '16px' // Evita zoom en iOS
+                    }}
                     value={editData.interests}
                     onChange={(e) => setEditData({...editData, interests: e.target.value})}
                   />
@@ -903,12 +1085,12 @@ export default function Perfil() {
             </div>
             
             {/* Footer fijo con botones */}
-            <div className="p-6 border-t" style={{ borderColor: 'var(--color-border)' }}>
-              <div className="flex gap-2">
-                <Button onClick={handleSave} className="flex-1">
+            <div className="p-4 sm:p-6 border-t" style={{ borderColor: 'var(--color-border)' }}>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Button onClick={handleSave} className="flex-1 touch-manipulation py-3 sm:py-2">
                   💾 Guardar
                 </Button>
-                <Button variant="outline" onClick={() => setIsEditing(false)} className="flex-1">
+                <Button variant="outline" onClick={() => setIsEditing(false)} className="flex-1 touch-manipulation py-3 sm:py-2">
                   ❌ Cancelar
                 </Button>
               </div>
