@@ -1,9 +1,10 @@
 import React from 'react'
 import Button from '../components/Button'
 import { supabase } from '../lib/supabase'
-import { ensureProfile } from '../lib/gamification'
+import { useGamification } from '../contexts/GamificationContext'
 
 export default function Comunidad() {
+  const { addPoints } = useGamification()
   const [posts, setPosts] = React.useState<Array<{ id: string; content: string; likes: number; created_at: string; user_id: string | null }>>([])
   const [content, setContent] = React.useState('')
   const [loading, setLoading] = React.useState(false)
@@ -11,7 +12,6 @@ export default function Comunidad() {
 
   React.useEffect(() => {
     (async () => {
-      await ensureProfile()
     const { data: { user } } = await supabase.auth.getUser()
     const id = user?.id || null
     setUid(id)
@@ -38,12 +38,16 @@ export default function Comunidad() {
     if (!error) {
       setContent('')
       await refresh()
+      // Dar puntos por participar en la comunidad
+      await addPoints(10) // 10 puntos por crear un post
     }
   }
 
   async function likePost(id: string) {
     await supabase.from('posts').update({ likes: (posts.find(p => p.id === id)?.likes ?? 0) + 1 }).eq('id', id)
     await refresh()
+    // Dar 1 punto por dar like
+    await addPoints(1)
   }
   return (
     <div className="min-h-screen pb-16" style={{ background: 'var(--color-bg)', color: 'var(--color-text)' }} role="main">

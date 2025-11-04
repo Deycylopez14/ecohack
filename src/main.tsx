@@ -11,8 +11,10 @@ import Comunidad from './pages/Comunidad'
 import Perfil from './pages/Perfil'
 import NavBar from './components/NavBar'
 import ThemeToggle from './components/ThemeToggle'
+import PointsNotification from './components/PointsNotification'
 import Educacion from './pages/Educacion'
 import Gamificacion from './pages/Gamificacion'
+import { GamificationProvider } from './contexts/GamificationContext'
 import './styles/index.css'
 
 function AppLayout() {
@@ -21,6 +23,7 @@ function AppLayout() {
   return (
     <>
       <ThemeToggle />
+      <PointsNotification />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/home" element={<Home />} />
@@ -44,7 +47,9 @@ const root = createRoot(document.getElementById('root')!)
 root.render(
   <React.StrictMode>
     <BrowserRouter>
-      <AppLayout />
+      <GamificationProvider>
+        <AppLayout />
+      </GamificationProvider>
     </BrowserRouter>
   </React.StrictMode>
 )

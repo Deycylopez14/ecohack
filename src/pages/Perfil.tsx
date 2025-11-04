@@ -2,25 +2,58 @@ import React from 'react'
 import { supabase } from '../lib/supabase'
 import Button from '../components/Button'
 import { useNavigate } from 'react-router-dom'
-import { getProfile } from '../lib/gamification'
+import { useGamification } from '../contexts/GamificationContext'
 
-interface UserProfile {
-  id: string
-  user_id: string
-  full_name: string | null
-  points: number
-  created_at: string
+// Componente Toast simple para mostrar notificaciones
+const Toast: React.FC<{
+  message: string
+  type: 'success' | 'error'
+  onClose: () => void
+}> = ({ message, type, onClose }) => {
+  const [isVisible, setIsVisible] = React.useState(true)
+
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsVisible(false)
+      setTimeout(onClose, 300)
+    }, 3000)
+
+    return () => clearTimeout(timer)
+  }, [onClose])
+
+  return (
+    <div
+      className={`fixed bottom-4 right-4 p-4 rounded-lg shadow-lg transition-all duration-300 z-50 max-w-sm ${
+        isVisible ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0'
+      } ${type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}
+    >
+      <div className="flex items-center gap-2">
+        <span className="text-lg">{type === 'success' ? '✅' : '❌'}</span>
+        <span className="font-medium">{message}</span>
+        <button
+          onClick={() => {
+            setIsVisible(false)
+            setTimeout(onClose, 300)
+          }}
+          className="ml-auto text-white hover:text-gray-200 transition-colors"
+        >
+          ×
+        </button>
+      </div>
+    </div>
+  )
 }
 
 export default function Perfil() {
   const navigate = useNavigate()
-  const [loading, setLoading] = React.useState(true)
+  const { profile, totalPoints, loading, refreshProfile } = useGamification()
   const [userEmail, setUserEmail] = React.useState<string | null>(null)
-  const [profile, setProfile] = React.useState<UserProfile | null>(null)
   const [activeTab, setActiveTab] = React.useState<'info' | 'logros' | 'actividad'>('info')
   const [isEditing, setIsEditing] = React.useState(false)
   const [profilePicture, setProfilePicture] = React.useState<string | null>(null)
   const [uploadingPicture, setUploadingPicture] = React.useState(false)
+  const [toast, setToast] = React.useState<{message: string, type: 'success' | 'error'} | null>(null)
+  const [showPhotoMenu, setShowPhotoMenu] = React.useState(false)
   const [editData, setEditData] = React.useState({
     fullName: '',
     bio: '',
@@ -33,42 +66,128 @@ export default function Perfil() {
       const { data } = await supabase.auth.getUser()
       const u = data.user
       if (!u) {
-        setLoading(false)
         return
       }
       setUserEmail(u.email ?? null)
       
-      // Cargar perfil con puntos
-      const userProfile = await getProfile()
-      if (userProfile) {
-        setProfile(userProfile)
+      // Usar userId consistente (profile.user_id o email como fallback)
+      const userId = profile?.user_id || u.email || 'default'
+      
+      // Cargar datos del perfil desde localStorage primero
+      const localProfileKey = `profileData_${userId}`
+      const savedProfileData = localStorage.getItem(localProfileKey)
+      
+      if (savedProfileData) {
+        try {
+          const localData = JSON.parse(savedProfileData)
+          console.log('📋 Cargando datos de perfil desde localStorage:', localData)
+          setEditData({
+            fullName: localData.fullName || '',
+            bio: localData.bio || 'Comprometido con el medio ambiente 🌱',
+            location: localData.location || 'Ciudad de México',
+            interests: localData.interests || 'Reciclaje, Compostaje, Energía Solar'
+          })
+        } catch (error) {
+          console.log('Error parsing local profile data:', error)
+        }
+      }
+      
+      // Si hay profile de Supabase, usar esos datos (tiene prioridad)
+      if (profile) {
+        setEditData(prev => ({
+          ...prev,
+          fullName: profile.full_name || prev.fullName
+        }))
+      }
+      
+      // Si no hay datos locales ni de Supabase, usar valores por defecto
+      if (!savedProfileData && !profile) {
         setEditData({
-          fullName: userProfile.full_name || '',
+          fullName: '',
           bio: 'Comprometido con el medio ambiente 🌱',
           location: 'Ciudad de México',
           interests: 'Reciclaje, Compostaje, Energía Solar'
         })
-        
-        // Cargar foto de perfil desde localStorage
-        const storageKey = `profilePicture_${userProfile.user_id}`
-        const savedPicture = localStorage.getItem(storageKey)
-        console.log('Loading profile picture on init:', {
-          userId: userProfile.user_id,
-          storageKey,
-          hasSavedPicture: !!savedPicture,
-          savedPictureLength: savedPicture?.length || 0
-        })
-        if (savedPicture) {
-          setProfilePicture(savedPicture)
-          console.log('Profile picture loaded from localStorage')
-        } else {
-          console.log('No saved profile picture found')
-        }
       }
-      setLoading(false)
+      
+      // Cargar foto de perfil desde localStorage (funciona con o sin profile)
+      const storageKey = `profilePicture_${userId}`
+      const savedPicture = localStorage.getItem(storageKey)
+      if (savedPicture) {
+        console.log('📷 Cargando foto desde localStorage para:', userId)
+        setProfilePicture(savedPicture)
+      } else {
+        console.log('📷 No se encontró foto guardada para:', userId)
+      }
     }
     load()
-  }, [])
+  }, [profile])
+
+  // Cargar foto inmediatamente sin esperar conexiones
+  React.useEffect(() => {
+    const loadProfilePicture = async () => {
+      // Intentar múltiples fuentes para el userId
+      let userId = 'ecohack_user'
+      
+      // 1. Primero intentar con profile
+      if (profile?.user_id) {
+        userId = profile.user_id
+      } 
+      // 2. Luego con userEmail del estado
+      else if (userEmail) {
+        userId = userEmail
+      }
+      // 3. Finalmente intentar obtener directamente de Supabase
+      else {
+        try {
+          const { data } = await supabase.auth.getUser()
+          if (data.user?.email) {
+            userId = data.user.email
+            setUserEmail(data.user.email) // Actualizar el estado también
+          } else if (data.user?.id) {
+            userId = data.user.id
+          }
+        } catch (error) {
+          console.log('Usando userId por defecto debido a error:', error)
+        }
+      }
+
+      // Intentar cargar desde múltiples keys por si acaso
+      const possibleKeys = [
+        `profilePicture_${userId}`,
+        `profilePicture_${userEmail}`,
+        `profilePicture_${profile?.user_id}`,
+        'profilePicture_ecohack_user'
+      ].filter(Boolean)
+
+      for (const storageKey of possibleKeys) {
+        const savedPicture = localStorage.getItem(storageKey)
+        if (savedPicture) {
+          console.log('📷 Foto encontrada con key:', storageKey)
+          setProfilePicture(savedPicture)
+          return
+        }
+      }
+      
+      console.log('📷 No se encontró foto guardada para ninguna key')
+    }
+
+    loadProfilePicture()
+  }, []) // Sin dependencias - se ejecuta inmediatamente
+
+  // Cerrar menú de foto con Escape
+  React.useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setShowPhotoMenu(false)
+      }
+    }
+
+    if (showPhotoMenu) {
+      document.addEventListener('keydown', handleKeyDown)
+      return () => document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [showPhotoMenu])
 
   const onLogout = async () => {
     await supabase.auth.signOut()
@@ -76,62 +195,133 @@ export default function Perfil() {
   }
 
   const handleSave = async () => {
-    if (!profile) return
+    console.log('💾 Guardando perfil...', editData)
     
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ full_name: editData.fullName })
-        .eq('user_id', profile.user_id)
-      
-      if (!error) {
-        setProfile({ ...profile, full_name: editData.fullName })
-        setIsEditing(false)
+      // Intentar guardar en Supabase si está disponible
+      if (profile?.user_id) {
+        console.log('🔄 Intentando guardar en Supabase...')
+        const { error } = await supabase
+          .from('profiles')
+          .update({ full_name: editData.fullName })
+          .eq('user_id', profile.user_id)
+        
+        if (error) {
+          console.log('⚠️ Error de Supabase, guardando localmente:', error.message)
+        } else {
+          console.log('✅ Guardado en Supabase exitoso')
+          // Refrescar el perfil para obtener los datos actualizados
+          await refreshProfile()
+        }
+      } else {
+        console.log('📝 Profile no disponible, guardando solo localmente')
       }
+
+      // SIEMPRE guardar localmente como respaldo
+      const userId = profile?.user_id || userEmail || 'ecohack_user'
+      const localProfileData = {
+        fullName: editData.fullName,
+        bio: editData.bio,
+        location: editData.location,
+        interests: editData.interests,
+        lastUpdated: new Date().toISOString()
+      }
+      
+      localStorage.setItem(`profileData_${userId}`, JSON.stringify(localProfileData))
+      console.log('💾 Datos guardados localmente para:', userId)
+      
+      // Cerrar modal y mostrar notificación de éxito
+      setIsEditing(false)
+      setToast({ 
+        message: '✅ Perfil actualizado correctamente', 
+        type: 'success' 
+      })
+
     } catch (error) {
-      console.error('Error updating profile:', error)
+      console.error('❌ Error al guardar perfil:', error)
+      setToast({ 
+        message: 'Error al guardar el perfil. Inténtalo de nuevo.', 
+        type: 'error' 
+      })
     }
   }
 
-  const handlePictureChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    console.log('=== INICIO handlePictureChange ===')
+  // Función auxiliar para abrir selector de archivos
+  const openFileSelector = () => {
+    console.log('📁 Intentando abrir selector de archivos...')
+    const input = document.getElementById('profile-picture-input') as HTMLInputElement
+    if (input) {
+      console.log('✅ Input encontrado, activando...')
+      input.click()
+    } else {
+      console.log('❌ Input no encontrado')
+      // Crear input dinámicamente como fallback
+      const dynamicInput = document.createElement('input')
+      dynamicInput.type = 'file'
+      dynamicInput.accept = 'image/*'
+      dynamicInput.onchange = (e) => handlePictureChange(e as any)
+      dynamicInput.click()
+      console.log('🔄 Usando input dinámico como fallback')
+    }
+  }
+
+  const handlePictureChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('🎯 === INICIO handlePictureChange ===')
+    console.log('🎯 Event target:', event.target)
+    console.log('🎯 Files:', event.target.files)
+    
     const file = event.target.files?.[0]
-    console.log('Archivo seleccionado:', {
-      hasFile: !!file,
-      fileName: file?.name,
-      fileType: file?.type,
-      fileSize: file?.size,
-      hasProfile: !!profile,
-      targetId: event.target.id,
-      profileUserId: profile?.user_id
-    })
     
     if (!file) {
       console.log('❌ No hay archivo seleccionado')
       return
     }
 
-    if (!profile) {
-      console.log('❌ No hay perfil cargado')
-      return
+    console.log('📷 Archivo seleccionado:', {
+      fileName: file.name,
+      fileType: file.type,
+      fileSize: file.size,
+      hasProfile: !!profile,
+      hasUserEmail: !!userEmail
+    })
+
+    // Usar múltiples fallbacks para el userId
+    let userId = 'ecohack_user'
+    if (profile?.user_id) {
+      userId = profile.user_id
+    } else if (userEmail) {
+      userId = userEmail
+    } else {
+      // Intentar obtener del auth de Supabase
+      try {
+        const { data } = await supabase.auth.getUser()
+        if (data.user?.email) {
+          userId = data.user.email
+        } else if (data.user?.id) {
+          userId = data.user.id
+        }
+      } catch (error) {
+        console.log('No se pudo obtener usuario de Supabase, usando fallback')
+      }
     }
 
+    console.log('✅ Usuario identificado:', userId)
     console.log('✅ Archivo válido seleccionado:', file.name, file.type, file.size)
 
-    // Validar que sea un archivo de imagen (más permisivo)
-    const validImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/bmp', 'image/svg+xml', 'image/tiff', 'image/ico']
+    // Validar que sea un archivo de imagen
+    const validImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/bmp', 'image/svg+xml']
     const isValidImage = validImageTypes.includes(file.type.toLowerCase()) || file.type.startsWith('image/')
     
     if (!isValidImage) {
       console.log('❌ Tipo de archivo no válido:', file.type)
-      alert('Por favor selecciona un archivo de imagen válido (JPG, PNG, GIF, WebP, BMP, SVG, TIFF, ICO, etc.)')
+      setToast({ message: 'Por favor selecciona un archivo de imagen válido', type: 'error' })
       return
     }
 
-    // Validar tamaño (máximo 10MB para ser más permisivo)
-    if (file.size > 10 * 1024 * 1024) {
+    // Validar tamaño (máximo 15MB)
+    if (file.size > 15 * 1024 * 1024) {
       console.log('❌ Archivo muy grande:', file.size)
-      alert('La imagen es muy grande. Por favor selecciona una imagen menor a 10MB')
+      setToast({ message: 'La imagen es muy grande. Máximo 15MB', type: 'error' })
       return
     }
 
@@ -139,56 +329,154 @@ export default function Perfil() {
     setUploadingPicture(true)
     console.log('📤 Iniciando proceso de carga...')
     
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      const result = e.target?.result as string
-      console.log('✅ FileReader completado:', {
-        resultLength: result?.length || 0,
-        resultPreview: result?.substring(0, 50) + '...',
-        userId: profile.user_id
-      })
+    try {
+      // Redimensionar imagen si es muy grande
+      let processedFile = file
+      if (file.size > 2 * 1024 * 1024) { // Si es mayor a 2MB
+        console.log('🔄 Redimensionando imagen...')
+        processedFile = await resizeImageFile(file, 800, 800, 0.8)
+        console.log('✅ Imagen redimensionada:', processedFile.size)
+      }
+
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        const result = e.target?.result as string
+        console.log('✅ FileReader completado:', {
+          resultLength: result?.length || 0,
+          resultPreview: result?.substring(0, 50) + '...',
+          userId: userId
+        })
+        
+        // Actualizar estado inmediatamente
+        console.log('🔄 Actualizando estado profilePicture...')
+        setProfilePicture(result)
+        
+        // Guardar en localStorage con clave única (usar userId en lugar de profile.user_id)
+        const storageKey = `profilePicture_${userId}`
+        try {
+          localStorage.setItem(storageKey, result)
+          console.log('💾 Guardado en localStorage:', storageKey)
+          
+          // Verificar que se guardó correctamente
+          const verification = localStorage.getItem(storageKey)
+          console.log('✅ Verificación localStorage:', !!verification && verification.length > 0)
+          
+          // Mostrar notificación de éxito
+          setToast({ message: 'Foto de perfil actualizada correctamente', type: 'success' })
+          
+        } catch (storageError) {
+          console.error('❌ Error guardando en localStorage:', storageError)
+          setToast({ message: 'Error al guardar la imagen. La imagen puede ser muy grande.', type: 'error' })
+        }
+        
+        setUploadingPicture(false)
+        console.log('🎉 Proceso completado exitosamente!')
+      }
       
-      // Actualizar estado inmediatamente
-      console.log('🔄 Actualizando estado profilePicture...')
-      setProfilePicture(result)
+      reader.onerror = (error) => {
+        console.error('❌ Error en FileReader:', error)
+        setToast({ message: 'Error al procesar la imagen', type: 'error' })
+        setUploadingPicture(false)
+      }
       
-      // Guardar en localStorage
-      const storageKey = `profilePicture_${profile.user_id}`
-      localStorage.setItem(storageKey, result)
-      console.log('💾 Guardado en localStorage:', storageKey)
+      console.log('📖 Iniciando FileReader.readAsDataURL...')
+      reader.readAsDataURL(processedFile)
       
-      // Verificar que se guardó correctamente
-      const verification = localStorage.getItem(storageKey)
-      console.log('✅ Verificación localStorage:', !!verification)
-      
+    } catch (error) {
+      console.error('❌ Error procesando imagen:', error)
+      setToast({ message: 'Error al procesar la imagen', type: 'error' })
       setUploadingPicture(false)
-      console.log('🎉 Proceso completado exitosamente!')
-      
-      // Forzar re-render después de un momento
-      setTimeout(() => {
-        console.log('🔍 Estado actual profilePicture:', !!profilePicture)
-        console.log('🔍 LocalStorage actual:', !!localStorage.getItem(storageKey))
-      }, 100)
     }
-    
-    reader.onerror = (error) => {
-      console.error('❌ Error en FileReader:', error)
-      alert('Error al cargar la imagen')
-      setUploadingPicture(false)
-    }
-    
-    console.log('📖 Iniciando FileReader.readAsDataURL...')
-    reader.readAsDataURL(file)
     
     // Limpiar el input para permitir seleccionar el mismo archivo nuevamente
     event.target.value = ''
     console.log('=== FIN handlePictureChange ===')
   }
 
-  const removePicture = () => {
-    if (!profile) return
+  // Función auxiliar para redimensionar imágenes
+  const resizeImageFile = (file: File, maxWidth: number, maxHeight: number, quality: number): Promise<File> => {
+    return new Promise((resolve) => {
+      const canvas = document.createElement('canvas')
+      const ctx = canvas.getContext('2d')!
+      const img = new Image()
+      
+      img.onload = () => {
+        // Calcular nuevas dimensiones manteniendo proporción
+        let { width, height } = img
+        
+        if (width > height) {
+          if (width > maxWidth) {
+            height = (height * maxWidth) / width
+            width = maxWidth
+          }
+        } else {
+          if (height > maxHeight) {
+            width = (width * maxHeight) / height
+            height = maxHeight
+          }
+        }
+        
+        canvas.width = width
+        canvas.height = height
+        
+        // Dibujar imagen redimensionada con suavizado
+        ctx.imageSmoothingEnabled = true
+        ctx.imageSmoothingQuality = 'high'
+        ctx.drawImage(img, 0, 0, width, height)
+        
+        // Convertir a blob y luego a File
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const resizedFile = new File([blob], file.name, {
+              type: file.type,
+              lastModified: Date.now()
+            })
+            resolve(resizedFile)
+          } else {
+            resolve(file) // Fallback al archivo original
+          }
+        }, file.type, quality)
+      }
+      
+      img.src = URL.createObjectURL(file)
+    })
+  }
+
+  const removePicture = async () => {
+    // Usar el mismo sistema robusto para obtener userId
+    let userId = 'ecohack_user'
+    if (profile?.user_id) {
+      userId = profile.user_id
+    } else if (userEmail) {
+      userId = userEmail
+    } else {
+      try {
+        const { data } = await supabase.auth.getUser()
+        if (data.user?.email) {
+          userId = data.user.email
+        } else if (data.user?.id) {
+          userId = data.user.id
+        }
+      } catch (error) {
+        console.log('Usando userId por defecto para remover')
+      }
+    }
+
     setProfilePicture(null)
-    localStorage.removeItem(`profilePicture_${profile.user_id}`)
+    
+    // Remover de múltiples keys posibles
+    const possibleKeys = [
+      `profilePicture_${userId}`,
+      `profilePicture_${userEmail}`,
+      `profilePicture_${profile?.user_id}`,
+      'profilePicture_ecohack_user'
+    ].filter(Boolean)
+
+    possibleKeys.forEach(key => {
+      localStorage.removeItem(key)
+    })
+    
+    console.log('🗑️ Foto removida para usuario:', userId)
   }
 
   const getUserLevel = (points: number) => {
@@ -197,6 +485,8 @@ export default function Perfil() {
     if (points >= 1000) return { level: 'Eco-Explorer', color: '#10b981', icon: '🌟' }
     return { level: 'Eco-Novato', color: '#34d399', icon: '🌱' }
   }
+
+  const userLevel = getUserLevel(totalPoints)
 
   const activities = [
     { type: 'quiz', text: 'Completó el quiz educativo', points: 30, time: '2 horas' },
@@ -207,11 +497,11 @@ export default function Perfil() {
 
   const achievements = [
     { name: 'Primer Paso', description: 'Primer login en EcoHack', icon: '🎯', unlocked: true },
-    { name: 'Quiz Master', description: 'Completar 5 quizzes', icon: '📚', unlocked: true },
-    { name: 'Gamer Verde', description: 'Jugar todos los mini-juegos', icon: '🎮', unlocked: true },
-    { name: 'Reciclador Pro', description: 'Acumular 10,000 puntos', icon: '♻️', unlocked: (profile?.points ?? 0) >= 10000 },
-    { name: 'Comunidad Activa', description: 'Crear 10 posts', icon: '👥', unlocked: false },
-    { name: 'Eco-Legend', description: 'Completar todos los retos', icon: '🏆', unlocked: false }
+    { name: 'Quiz Master', description: 'Completar 5 quizzes', icon: '📚', unlocked: totalPoints >= 100 },
+    { name: 'Gamer Verde', description: 'Jugar todos los mini-juegos', icon: '🎮', unlocked: totalPoints >= 200 },
+    { name: 'Reciclador Pro', description: 'Acumular 1,000 puntos', icon: '♻️', unlocked: totalPoints >= 1000 },
+    { name: 'Eco-Warrior', description: 'Acumular 5,000 puntos', icon: '⚔️', unlocked: totalPoints >= 5000 },
+    { name: 'Eco-Master', description: 'Acumular 10,000 puntos', icon: '🏆', unlocked: totalPoints >= 10000 }
   ]
 
   if (loading) {
@@ -235,8 +525,6 @@ export default function Perfil() {
       </div>
     )
   }
-
-  const userLevel = getUserLevel(profile?.points || 0)
 
   return (
     <div className="min-h-screen pb-16" style={{ background: 'var(--color-bg)', color: 'var(--color-text)' }} role="main">
@@ -266,93 +554,46 @@ export default function Perfil() {
         {/* Avatar y información principal */}
         <div className="relative px-4 pb-4">
           <div className="flex flex-col sm:flex-row sm:items-end sm:gap-4 -mt-16">
-            {/* Avatar */}
+            {/* Avatar con menú estilo Facebook */}
             <div className="relative">
-              <div className="w-32 h-32 rounded-full border-4 border-white overflow-hidden shadow-lg" style={{ background: 'var(--color-surface)' }}>
-                {(() => {
-                  console.log('🖼️ Renderizando avatar:', {
-                    hasProfilePicture: !!profilePicture,
-                    profilePictureLength: profilePicture?.length || 0,
-                    profilePicturePreview: profilePicture?.substring(0, 30) + '...' || 'none'
-                  })
-                  return null
-                })()}
+              {/* Input para cambiar foto - FUERA del menú para que siempre esté disponible */}
+              <input
+                id="profile-picture-input"
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={handlePictureChange}
+                style={{ display: 'none' }}
+              />
+
+              {/* Foto de perfil clickeable */}
+              <div 
+                className="w-32 h-32 rounded-full border-4 border-white overflow-hidden shadow-lg cursor-pointer group relative"
+                style={{ background: 'var(--color-surface)' }}
+                onClick={() => setShowPhotoMenu(!showPhotoMenu)}
+              >
                 {profilePicture ? (
                   <img 
-                    key={profilePicture.slice(-20)} // Usar los últimos 20 caracteres como key para forzar re-render
+                    key={profilePicture.slice(-20)}
                     src={profilePicture} 
                     alt="Foto de perfil" 
-                    className="w-full h-full object-cover"
-                    onLoad={() => console.log('✅ Profile picture image loaded successfully')}
+                    className="w-full h-full object-cover group-hover:brightness-75 transition-all"
                     onError={(e) => {
                       console.error('❌ Error loading profile picture:', e)
                       setProfilePicture(null)
                     }}
                   />
                 ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center text-4xl text-white font-bold">
+                  <div className="w-full h-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center text-4xl text-white font-bold group-hover:brightness-90 transition-all">
                     {(profile?.full_name || userEmail || 'U').charAt(0).toUpperCase()}
                   </div>
                 )}
-              </div>
-              
-              {/* Botón para cambiar foto directamente */}
-              <div className="absolute bottom-0 right-0">
-                <div className="relative group">
-                  <label 
-                    htmlFor="profile-picture-direct"
-                    className="w-10 h-10 bg-gray-600 hover:bg-gray-700 rounded-full border-3 border-white flex items-center justify-center cursor-pointer transition-colors shadow-lg"
-                    title="Haz clic para cambiar tu foto de perfil"
-                  >
-                    {uploadingPicture ? (
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    ) : (
-                      <svg 
-                        width="16" 
-                        height="16" 
-                        viewBox="0 0 24 24" 
-                        fill="none" 
-                        stroke="white" 
-                        strokeWidth="2" 
-                        strokeLinecap="round" 
-                        strokeLinejoin="round"
-                      >
-                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
-                        <circle cx="12" cy="13" r="4"/>
-                      </svg>
-                    )}
-                  </label>
-                  
-                  {/* Tooltip hover */}
-                  <div className="absolute bottom-12 right-0 bg-black text-white text-xs rounded px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                    📷 Cambiar foto
-                  </div>
-                  
-                  {/* Input para cambio directo */}
-                  <input
-                    id="profile-picture-direct"
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    onChange={handlePictureChange}
-                    className="hidden"
-                  />
-                </div>
-              </div>
-              
-              {/* Indicador online */}
-              <div className="absolute bottom-2 right-12 w-6 h-6 bg-green-500 border-2 border-white rounded-full"></div>
-              
-              {/* Botón pequeño para quitar foto (solo visible si hay foto) */}
-              {profilePicture && (
-                <button
-                  onClick={removePicture}
-                  className="absolute top-2 right-2 w-8 h-8 bg-red-500 hover:bg-red-600 rounded-full border-2 border-white flex items-center justify-center transition-colors shadow-md"
-                  title="Quitar foto de perfil"
-                >
+                
+                {/* Overlay al hacer hover */}
+                <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity rounded-full flex items-center justify-center">
                   <svg 
-                    width="12" 
-                    height="12" 
+                    width="24" 
+                    height="24" 
                     viewBox="0 0 24 24" 
                     fill="none" 
                     stroke="white" 
@@ -360,10 +601,86 @@ export default function Perfil() {
                     strokeLinecap="round" 
                     strokeLinejoin="round"
                   >
-                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                    <circle cx="12" cy="13" r="4"/>
                   </svg>
-                </button>
+                </div>
+              </div>
+
+              {/* Menú contextual estilo Facebook */}
+              {showPhotoMenu && (
+                <>
+                  {/* Overlay para cerrar el menú */}
+                  <div 
+                    className="fixed inset-0 z-40"
+                    onClick={() => setShowPhotoMenu(false)}
+                  />
+                  
+                  {/* Menú de opciones */}
+                  <div className="absolute top-full left-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-xl border z-50 overflow-hidden"
+                       style={{ background: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
+                    
+                    {/* Ver foto (solo si hay foto) */}
+                    {profilePicture && (
+                      <button
+                        onClick={() => {
+                          setShowPhotoMenu(false)
+                          // Abrir foto en modal o nueva pestaña
+                          const link = document.createElement('a')
+                          link.href = profilePicture
+                          link.download = 'mi-foto-perfil.jpg'
+                          link.target = '_blank'
+                          link.click()
+                        }}
+                        className="w-full px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3 transition-colors"
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                          <circle cx="12" cy="12" r="3"/>
+                        </svg>
+                        <span>Ver foto de perfil</span>
+                      </button>
+                    )}
+                    
+                    {/* Cambiar foto */}
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        console.log('🖱️ Click en cambiar foto de perfil')
+                        setShowPhotoMenu(false)
+                        openFileSelector()
+                      }}
+                      className="w-full px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3 cursor-pointer transition-colors"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                        <circle cx="12" cy="13" r="4"/>
+                      </svg>
+                      <span>Cambiar foto de perfil</span>
+                    </button>
+                    
+                    {/* Eliminar foto (solo si hay foto) */}
+                    {profilePicture && (
+                      <button
+                        onClick={async () => {
+                          setShowPhotoMenu(false)
+                          await removePicture()
+                          setToast({ message: 'Foto de perfil eliminada', type: 'success' })
+                        }}
+                        className="w-full px-4 py-3 text-left hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-3 text-red-600 dark:text-red-400 transition-colors"
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <polyline points="3,6 5,6 21,6"/>
+                          <path d="M19,6v14a2,2 0 0,1-2,2H7a2,2 0 0,1-2-2V6m3,0V4a2,2 0 0,1,2-2h4a2,2 0 0,1,2,2v2"/>
+                          <line x1="10" y1="11" x2="10" y2="17"/>
+                          <line x1="14" y1="11" x2="14" y2="17"/>
+                        </svg>
+                        <span>Eliminar foto de perfil</span>
+                      </button>
+                    )}
+                  </div>
+                </>
               )}
             </div>
 
@@ -371,12 +688,14 @@ export default function Perfil() {
             <div className="flex-1 mt-4 sm:mt-0 sm:mb-4">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <h1 className="text-2xl font-bold">{profile?.full_name || 'Usuario EcoHack'}</h1>
+                  <h1 className="text-2xl font-bold">
+                    {profile?.full_name || editData.fullName || 'Usuario EcoHack'}
+                  </h1>
                   <p style={{ color: 'var(--color-text-secondary)' }} className="text-sm">{userEmail}</p>
                   <div className="flex items-center gap-2 mt-1">
                     <span className="text-lg">{userLevel.icon}</span>
                     <span className="font-semibold" style={{ color: userLevel.color }}>{userLevel.level}</span>
-                    <span className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>• {profile?.points || 0} puntos</span>
+                    <span className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>• {totalPoints} puntos</span>
                   </div>
                 </div>
                 <div className="flex gap-2 mt-3 sm:mt-0">
@@ -423,19 +742,19 @@ export default function Perfil() {
               {/* Estadísticas principales */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="p-4 rounded-lg text-center" style={{ background: 'var(--color-surface)' }}>
-                  <div className="text-2xl font-bold text-green-600">{profile?.points || 0}</div>
+                  <div className="text-2xl font-bold text-green-600">{totalPoints}</div>
                   <div className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>Puntos Totales</div>
                 </div>
                 <div className="p-4 rounded-lg text-center" style={{ background: 'var(--color-surface)' }}>
-                  <div className="text-2xl font-bold text-blue-600">500</div>
-                  <div className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>Botellas Recicladas</div>
+                  <div className="text-2xl font-bold text-blue-600">{Math.floor(totalPoints / 10)}</div>
+                  <div className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>Items Reciclados</div>
                 </div>
                 <div className="p-4 rounded-lg text-center" style={{ background: 'var(--color-surface)' }}>
-                  <div className="text-2xl font-bold text-purple-600">90</div>
-                  <div className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>Días Activos</div>
+                  <div className="text-2xl font-bold text-purple-600">{Math.floor(totalPoints / 20)}</div>
+                  <div className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>Partidas Jugadas</div>
                 </div>
                 <div className="p-4 rounded-lg text-center" style={{ background: 'var(--color-surface)' }}>
-                  <div className="text-2xl font-bold text-orange-600">15</div>
+                  <div className="text-2xl font-bold text-orange-600">{Math.floor(totalPoints / 50)}</div>
                   <div className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>Retos Completados</div>
                 </div>
               </div>
@@ -532,60 +851,7 @@ export default function Perfil() {
             {/* Contenido scrolleable */}
             <div className="flex-1 overflow-y-auto p-6">
               <div className="space-y-4">
-                {/* Modal solo para información del perfil - foto se cambia desde el avatar principal */}
-                <div>
-                  <label className="block text-sm font-medium mb-1">Foto de perfil</label>
-                  <div className="flex items-center justify-center mb-4">
-                    <div className="relative w-24 h-24 rounded-full overflow-hidden border-4" style={{ borderColor: 'var(--color-border)' }}>
-                      {profilePicture ? (
-                        <img src={profilePicture} alt="Vista previa" className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center text-2xl text-white font-bold">
-                          {(profile?.full_name || userEmail || 'U').charAt(0).toUpperCase()}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <div className="flex gap-2 justify-center">
-                    <label 
-                      htmlFor="modal-picture-input"
-                      className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm rounded-lg cursor-pointer transition-colors border flex items-center gap-2"
-                      style={{ borderColor: 'var(--color-border)' }}
-                    >
-                      <svg 
-                        width="12" 
-                        height="12" 
-                        viewBox="0 0 24 24" 
-                        fill="none" 
-                        stroke="currentColor" 
-                        strokeWidth="2" 
-                        strokeLinecap="round" 
-                        strokeLinejoin="round"
-                      >
-                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
-                        <circle cx="12" cy="13" r="4"/>
-                      </svg>
-                      <span>Cambiar foto</span>
-                    </label>
-                    <input
-                      id="modal-picture-input"
-                      type="file"
-                      accept="image/*"
-                      capture="environment"
-                      onChange={handlePictureChange}
-                      className="hidden"
-                    />
-                    {profilePicture && (
-                      <button
-                        onClick={removePicture}
-                        className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white text-sm rounded-lg transition-colors"
-                      >
-                        🗑️ Quitar foto
-                      </button>
-                    )}
-                  </div>
-                </div>
+                {/* Información básica del perfil */}
                 <div>
                   <label className="block text-sm font-medium mb-1">Nombre completo</label>
                   <input
@@ -649,6 +915,15 @@ export default function Perfil() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Toast de notificaciones */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
       )}
       </div>
     </div>

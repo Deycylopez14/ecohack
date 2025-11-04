@@ -1,6 +1,6 @@
 import React from 'react'
 import Button from '../components/Button'
-import { addPoints, ensureProfile } from '../lib/gamification'
+import { useGamification } from '../contexts/GamificationContext'
 
 type Question = { id: string; text: string; options: string[]; correct: string }
 
@@ -11,18 +11,19 @@ const QUESTIONS: Question[] = [
 ]
 
 export default function Educacion() {
+  const { addPoints } = useGamification()
   const [answers, setAnswers] = React.useState<Record<string, string>>({})
   const [result, setResult] = React.useState<{ correct: number; points: number } | null>(null)
   const [submitting, setSubmitting] = React.useState(false)
-
-  React.useEffect(() => { ensureProfile() }, [])
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSubmitting(true)
     const correct = QUESTIONS.reduce((acc, q) => acc + (answers[q.id] === q.correct ? 1 : 0), 0)
     const points = correct * 10
-    if (points > 0) await addPoints(points)
+    if (points > 0) {
+      await addPoints(points) // Usar el contexto
+    }
     setResult({ correct, points })
     setSubmitting(false)
   }
