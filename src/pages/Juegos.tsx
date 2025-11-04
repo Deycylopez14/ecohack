@@ -179,9 +179,30 @@ function ClasificadorGame() {
             ))}
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-3">
+            <div className="p-4 rounded-lg" style={{ background: 'var(--color-surface)' }}>
+              <h4 className="font-bold text-lg mb-2">🎮 Cómo jugar el Clasificador de Basura:</h4>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="p-3 rounded-lg border-l-4 border-blue-500" style={{ background: 'var(--color-background)' }}>
+                  <p className="font-semibold text-blue-600">📱 En móvil/tablet:</p>
+                  <p className="text-sm">1. Toca el residuo que quieres clasificar</p>
+                  <p className="text-sm">2. Se marcará con ✓ verde</p>
+                  <p className="text-sm">3. Toca el contenedor correcto</p>
+                  <p className="text-sm">4. ¡Ganas puntos por clasificar bien!</p>
+                </div>
+                
+                <div className="p-3 rounded-lg border-l-4 border-green-500" style={{ background: 'var(--color-background)' }}>
+                  <p className="font-semibold text-green-600">💻 En computadora:</p>
+                  <p className="text-sm">1. Arrastra el residuo con el mouse</p>
+                  <p className="text-sm">2. Suéltalo en el contenedor correcto</p>
+                  <p className="text-sm">3. También puedes hacer clic + clic</p>
+                  <p className="text-sm">4. ¡Ganas puntos por clasificar bien!</p>
+                </div>
+              </div>
+            </div>
+
             <h3 className="font-bold">
-              {isMobile ? 'Toca cada residuo y luego su contenedor:' : 'Arrastra cada residuo al contenedor correcto:'}
+              {isMobile ? 'Selecciona un residuo y luego su contenedor:' : 'Arrastra cada residuo al contenedor correcto:'}
             </h3>
             <div className="flex flex-wrap gap-3">
               {items.map(item => (
@@ -562,14 +583,26 @@ function AventuraGame() {
         </div>
       )}
 
-      <div className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-        <p>• Recoge botellas para ganar 5 puntos cada una</p>
-        <p>• Evita los obstáculos de basura</p>
-        {isMobile ? (
-          <p>• Usa los botones táctiles para controlar al personaje</p>
-        ) : (
-          <p>• Usa las flechas ←→ para moverte y ESPACIO para saltar</p>
-        )}
+      <div className="text-sm space-y-2" style={{ color: 'var(--color-text-secondary)' }}>
+        <p className="font-semibold">🎮 Cómo jugar:</p>
+        <p>• 🍼 Recoge botellas para ganar 5 puntos cada una</p>
+        <p>• 🗑️ Evita los obstáculos de basura</p>
+        
+        <div className="grid md:grid-cols-2 gap-4 mt-3">
+          <div className="p-3 rounded-lg" style={{ background: 'var(--color-surface)' }}>
+            <p className="font-semibold text-blue-600">📱 En móvil/tablet:</p>
+            <p>• Usa los botones táctiles grandes</p>
+            <p>• ⬅️ ➡️ para moverte</p>
+            <p>• ⬆️ SALTO para saltar obstáculos</p>
+          </div>
+          
+          <div className="p-3 rounded-lg" style={{ background: 'var(--color-surface)' }}>
+            <p className="font-semibold text-green-600">💻 En computadora:</p>
+            <p>• Usa las flechas del teclado ←→</p>
+            <p>• Presiona ESPACIO para saltar</p>
+            <p>• También funciona con WASD</p>
+          </div>
+        </div>
       </div>
     </div>
   )
@@ -602,478 +635,6 @@ export default function Juegos() {
           <span className="font-bold text-xl">Aventura Eco</span>
         </header>
         <main className="p-4">
-          <AventuraGame />
-        </main>
-      </div>
-    )
-  }
-
-  return (
-    <div className="min-h-screen pb-16" style={{ background: 'var(--color-bg)', color: 'var(--color-text)' }}>
-      <header className="flex items-center gap-2 p-4 border-b" style={{ background: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
-        <img src="/icons/ecohack.png" alt="Logo EcoHack" className="w-10 h-10" />
-        <span className="font-bold text-xl">Mini-Juegos Ecológicos</span>
-      </header>
-      <main className="p-4">
-        <h1 className="text-2xl font-bold mb-2" style={{ color: 'var(--color-primary)' }}>🎮 Mini-Juegos</h1>
-        <p className="mb-6" style={{ color: 'var(--color-text-secondary)' }}>
-          Diviértete y aprende sobre reciclaje con nuestros juegos interactivos. Optimizados para móvil y desktop.
-        </p>
-
-        <div className="grid gap-4 md:grid-cols-2">
-          <div
-            className="p-6 rounded-xl border cursor-pointer transition-all hover:scale-105 hover:shadow-lg"
-            style={{ background: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
-            onClick={() => setCurrentGame('clasificador')}
-          >
-            <div className="flex items-center gap-4 mb-4">
-              <span className="text-4xl">♻️</span>
-              <div>
-                <h2 className="font-bold text-xl">Clasificador de Basura</h2>
-                <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-                  Arrastra o toca para clasificar residuos
-                </p>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <p className="text-sm">🎯 Clasifica residuos en el contenedor correcto</p>
-              <p className="text-sm">⏱️ 60 segundos para conseguir la máxima puntuación</p>
-              <p className="text-sm">📱 Controles táctiles optimizados para móvil</p>
-              <p className="text-sm">🏆 10 puntos por clasificación correcta</p>
-            </div>
-          </div>
-
-          <div
-            className="p-6 rounded-xl border cursor-pointer transition-all hover:scale-105 hover:shadow-lg"
-            style={{ background: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
-            onClick={() => setCurrentGame('aventura')}
-          >
-            <div className="flex items-center gap-4 mb-4">
-              <span className="text-4xl">🏃</span>
-              <div>
-                <h2 className="font-bold text-xl">Aventura Eco</h2>
-                <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-                  Plataformas con controles móviles
-                </p>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <p className="text-sm">🍼 Recoge botellas para ganar puntos</p>
-              <p className="text-sm">🗑️ Evita obstáculos de basura</p>
-              <p className="text-sm">📱 Botones táctiles grandes para móvil</p>
-              <p className="text-sm">🏆 5 puntos por cada botella recolectada</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-8 p-4 rounded-lg" style={{ background: 'var(--color-surface)' }}>
-          <h3 className="font-bold mb-2">📱 Optimizado para todos los dispositivos:</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-            <div className="text-center">
-              <span className="text-2xl">📱</span>
-              <p>Móviles</p>
-              <p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>Controles táctiles</p>
-            </div>
-            <div className="text-center">
-              <span className="text-2xl">📟</span>
-              <p>Tablets</p>
-              <p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>Híbrido touch/click</p>
-            </div>
-            <div className="text-center">
-              <span className="text-2xl">💻</span>
-              <p>Desktop</p>
-              <p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>Teclado y mouse</p>
-            </div>
-            <div className="text-center">
-              <span className="text-2xl">🎮</span>
-              <p>Responsive</p>
-              <p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>Auto-adaptable</p>
-            </div>
-          </div>
-        </div>
-      </main>
-    </div>
-  )
-}
-  }, [])
-
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex gap-4">
-          <span className="font-bold">Puntos: {score}</span>
-          <span className="font-bold">Tiempo: {timeLeft}s</span>
-        </div>
-        {!gameActive && (
-          <Button onClick={startGame} size="md">
-            {score > 0 ? 'Jugar de nuevo' : 'Iniciar juego'}
-          </Button>
-        )}
-      </div>
-
-      {feedback && (
-        <div className="p-3 rounded-lg text-center font-bold" style={{ background: 'var(--color-secondary)', color: 'var(--color-on-secondary)' }}>
-          {feedback}
-        </div>
-      )}
-
-      {gameActive && (
-        <>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {BINS.map(bin => (
-              <div
-                key={bin.type}
-                className="p-4 rounded-xl border-2 border-dashed text-center min-h-24 flex flex-col items-center justify-center transition-all"
-                style={{ borderColor: bin.color, background: `${bin.color}20` }}
-                onDragOver={onDragOver}
-                onDrop={(e) => onDrop(e, bin.type)}
-              >
-                <span className="text-2xl mb-1">{bin.emoji}</span>
-                <span className="font-bold text-sm">{bin.name}</span>
-              </div>
-            ))}
-          </div>
-
-          <div className="space-y-2">
-            <h3 className="font-bold">Arrastra cada residuo al contenedor correcto:</h3>
-            <div className="flex flex-wrap gap-3">
-              {items.map(item => (
-                <div
-                  key={item.id}
-                  className="p-3 rounded-lg border cursor-move flex items-center gap-2 transition-all hover:scale-105"
-                  style={{ background: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
-                  draggable
-                  onDragStart={(e) => onDragStart(e, item)}
-                >
-                  <span className="text-xl">{item.emoji}</span>
-                  <span className="font-medium">{item.name}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </>
-      )}
-    </div>
-  )
-}
-
-// Aventura Eco Game
-interface AventuraPlayer {
-  x: number
-  y: number
-  velocityY: number
-  isJumping: boolean
-}
-
-interface Bottle {
-  id: number
-  x: number
-  y: number
-  collected: boolean
-}
-
-interface Obstacle {
-  id: number
-  x: number
-  y: number
-  width: number
-  height: number
-}
-
-function AventuraGame() {
-  const canvasRef = React.useRef<HTMLCanvasElement>(null)
-  const gameLoopRef = React.useRef<number>()
-  const [score, setScore] = React.useState(0)
-  const [gameActive, setGameActive] = React.useState(false)
-  const [gameOver, setGameOver] = React.useState(false)
-  const [player, setPlayer] = React.useState<AventuraPlayer>({ x: 50, y: 300, velocityY: 0, isJumping: false })
-  const [bottles, setBottles] = React.useState<Bottle[]>([])
-  const [obstacles, setObstacles] = React.useState<Obstacle[]>([])
-  const [keys, setKeys] = React.useState<Set<string>>(new Set())
-
-  const CANVAS_WIDTH = 800
-  const CANVAS_HEIGHT = 400
-  const GRAVITY = 0.8
-  const JUMP_FORCE = -15
-  const PLAYER_SPEED = 5
-  const GROUND_Y = CANVAS_HEIGHT - 50
-
-  const generateBottle = React.useCallback(() => {
-    return {
-      id: Math.random(),
-      x: CANVAS_WIDTH + Math.random() * 200,
-      y: GROUND_Y - 30 - Math.random() * 100,
-      collected: false
-    }
-  }, [])
-
-  const generateObstacle = React.useCallback(() => {
-    return {
-      id: Math.random(),
-      x: CANVAS_WIDTH + Math.random() * 300,
-      y: GROUND_Y - 40,
-      width: 30,
-      height: 40
-    }
-  }, [])
-
-  const startGame = React.useCallback(() => {
-    setGameActive(true)
-    setGameOver(false)
-    setScore(0)
-    setPlayer({ x: 50, y: GROUND_Y - 40, velocityY: 0, isJumping: false })
-    setBottles([generateBottle(), generateBottle()])
-    setObstacles([generateObstacle()])
-  }, [generateBottle, generateObstacle])
-
-  const endGame = React.useCallback(async () => {
-    setGameActive(false)
-    setGameOver(true)
-    if (score > 0) {
-      try {
-        await addPoints(score)
-      } catch (error) {
-        console.error('Error al añadir puntos:', error)
-      }
-    }
-  }, [score])
-
-  // Game physics and update
-  const updateGame = React.useCallback(() => {
-    if (!gameActive || gameOver) return
-
-    setPlayer(prevPlayer => {
-      let newPlayer = { ...prevPlayer }
-      
-      // Movement
-      if (keys.has('ArrowLeft') && newPlayer.x > 0) {
-        newPlayer.x -= PLAYER_SPEED
-      }
-      if (keys.has('ArrowRight') && newPlayer.x < CANVAS_WIDTH - 40) {
-        newPlayer.x += PLAYER_SPEED
-      }
-      if (keys.has(' ') && !newPlayer.isJumping) {
-        newPlayer.velocityY = JUMP_FORCE
-        newPlayer.isJumping = true
-      }
-
-      // Gravity
-      newPlayer.velocityY += GRAVITY
-      newPlayer.y += newPlayer.velocityY
-
-      // Ground collision
-      if (newPlayer.y >= GROUND_Y - 40) {
-        newPlayer.y = GROUND_Y - 40
-        newPlayer.velocityY = 0
-        newPlayer.isJumping = false
-      }
-
-      return newPlayer
-    })
-
-    // Update bottles
-    setBottles(prevBottles => {
-      return prevBottles.map(bottle => {
-        const newBottle = { ...bottle, x: bottle.x - 3 }
-        
-        // Check collision with player
-        if (!newBottle.collected && 
-            player.x < newBottle.x + 25 && player.x + 40 > newBottle.x &&
-            player.y < newBottle.y + 25 && player.y + 40 > newBottle.y) {
-          newBottle.collected = true
-          setScore(prev => prev + 5)
-        }
-
-        return newBottle
-      }).filter(bottle => bottle.x > -50 && !bottle.collected)
-    })
-
-    // Update obstacles
-    setObstacles(prevObstacles => {
-      return prevObstacles.map(obstacle => ({
-        ...obstacle,
-        x: obstacle.x - 4
-      })).filter(obstacle => obstacle.x > -100)
-    })
-
-    // Check obstacle collisions
-    obstacles.forEach(obstacle => {
-      if (player.x < obstacle.x + obstacle.width && player.x + 40 > obstacle.x &&
-          player.y < obstacle.y + obstacle.height && player.y + 40 > obstacle.y) {
-        endGame()
-      }
-    })
-
-    // Spawn new items
-    if (Math.random() < 0.02) {
-      setBottles(prev => [...prev, generateBottle()])
-    }
-    if (Math.random() < 0.01) {
-      setObstacles(prev => [...prev, generateObstacle()])
-    }
-  }, [gameActive, gameOver, keys, player, obstacles, endGame, generateBottle, generateObstacle])
-
-  // Render game
-  const render = React.useCallback(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-
-    // Clear canvas
-    ctx.fillStyle = '#87CEEB'
-    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
-
-    // Draw ground
-    ctx.fillStyle = '#228B22'
-    ctx.fillRect(0, GROUND_Y, CANVAS_WIDTH, 50)
-
-    // Draw player
-    ctx.fillStyle = '#FFD700'
-    ctx.fillRect(player.x, player.y, 40, 40)
-    ctx.fillStyle = '#000'
-    ctx.font = '20px Arial'
-    ctx.textAlign = 'center'
-    ctx.fillText('🚶', player.x + 20, player.y + 25)
-
-    // Draw bottles
-    bottles.forEach(bottle => {
-      if (!bottle.collected) {
-        ctx.fillStyle = '#00CED1'
-        ctx.fillRect(bottle.x, bottle.y, 25, 25)
-        ctx.fillStyle = '#000'
-        ctx.font = '16px Arial'
-        ctx.textAlign = 'center'
-        ctx.fillText('🍼', bottle.x + 12, bottle.y + 18)
-      }
-    })
-
-    // Draw obstacles
-    obstacles.forEach(obstacle => {
-      ctx.fillStyle = '#8B4513'
-      ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height)
-      ctx.fillStyle = '#000'
-      ctx.font = '16px Arial'
-      ctx.textAlign = 'center'
-      ctx.fillText('🗑️', obstacle.x + 15, obstacle.y + 25)
-    })
-
-    // Draw UI
-    ctx.fillStyle = '#000'
-    ctx.font = 'bold 20px Arial'
-    ctx.textAlign = 'left'
-    ctx.fillText(`Puntos: ${score}`, 10, 30)
-    ctx.fillText('Usa ←→ para moverte, ESPACIO para saltar', 10, CANVAS_HEIGHT - 10)
-  }, [player, bottles, obstacles, score])
-
-  // Keyboard handlers
-  React.useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      setKeys(prev => new Set(prev).add(e.code === 'Space' ? ' ' : e.key))
-    }
-
-    const handleKeyUp = (e: KeyboardEvent) => {
-      setKeys(prev => {
-        const newKeys = new Set(prev)
-        newKeys.delete(e.code === 'Space' ? ' ' : e.key)
-        return newKeys
-      })
-    }
-
-    window.addEventListener('keydown', handleKeyDown)
-    window.addEventListener('keyup', handleKeyUp)
-
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown)
-      window.removeEventListener('keyup', handleKeyUp)
-    }
-  }, [])
-
-  // Game loop
-  React.useEffect(() => {
-    if (gameActive && !gameOver) {
-      gameLoopRef.current = setInterval(() => {
-        updateGame()
-        render()
-      }, 1000 / 60) // 60 FPS
-
-      return () => {
-        if (gameLoopRef.current) {
-          clearInterval(gameLoopRef.current)
-        }
-      }
-    }
-  }, [gameActive, gameOver, updateGame, render])
-
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex gap-4">
-          <span className="font-bold">Puntos: {score}</span>
-          {gameOver && <span className="font-bold text-red-500">¡Juego terminado!</span>}
-        </div>
-        {!gameActive && (
-          <Button onClick={startGame} size="md">
-            {gameOver ? 'Jugar de nuevo' : 'Iniciar aventura'}
-          </Button>
-        )}
-      </div>
-
-      <div className="border-2 rounded-lg overflow-hidden" style={{ borderColor: 'var(--color-border)' }}>
-        <canvas
-          ref={canvasRef}
-          width={CANVAS_WIDTH}
-          height={CANVAS_HEIGHT}
-          className="block max-w-full h-auto"
-          style={{ background: '#87CEEB' }}
-        />
-      </div>
-
-      <div className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-        <p>• Recoge botellas para ganar 5 puntos cada una</p>
-        <p>• Evita los obstáculos de basura</p>
-        <p>• Usa las flechas ←→ para moverte y ESPACIO para saltar</p>
-      </div>
-    </div>
-  )
-}
-
-export default function Juegos() {
-  const [currentGame, setCurrentGame] = React.useState<'menu' | 'clasificador' | 'aventura'>('menu')
-
-  if (currentGame === 'clasificador') {
-    return (
-      <div className="min-h-screen pb-16" style={{ background: 'var(--color-bg)', color: 'var(--color-text)' }} role="main">
-        <header className="flex items-center gap-2 p-4 border-b" role="banner" style={{ background: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
-          <button onClick={() => setCurrentGame('menu')} className="mr-2" aria-label="Volver">
-            <span className="material-icons" style={{ color: 'var(--color-primary)' }}>arrow_back</span>
-          </button>
-          <img src="/icons/ecohack.png" alt="Logo EcoHack" className="w-10 h-10" />
-          <span className="font-bold text-xl" style={{letterSpacing: '1px'}}>EcoHack</span>
-        </header>
-        <main className="p-4">
-          <h1 className="text-2xl font-bold mb-2" style={{ color: 'var(--color-primary)' }}>Clasificador de Basura</h1>
-          <p className="mb-4" style={{ color: 'var(--color-text-secondary)' }}>Arrastra los residuos al contenedor correcto. ¡10 puntos por acierto!</p>
-          <ClasificadorGame />
-        </main>
-      </div>
-    )
-  }
-
-  if (currentGame === 'aventura') {
-    return (
-      <div className="min-h-screen pb-16" style={{ background: 'var(--color-bg)', color: 'var(--color-text)' }} role="main">
-        <header className="flex items-center gap-2 p-4 border-b" role="banner" style={{ background: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
-          <button onClick={() => setCurrentGame('menu')} className="mr-2" aria-label="Volver">
-            <span className="material-icons" style={{ color: 'var(--color-primary)' }}>arrow_back</span>
-          </button>
-          <img src="/icons/ecohack.png" alt="Logo EcoHack" className="w-10 h-10" />
-          <span className="font-bold text-xl" style={{letterSpacing: '1px'}}>EcoHack</span>
-        </header>
-        <main className="p-4">
-          <h1 className="text-2xl font-bold mb-2" style={{ color: 'var(--color-secondary)' }}>Aventura Eco</h1>
-          <p className="mb-4" style={{ color: 'var(--color-text-secondary)' }}>Recoge botellas y evita obstáculos. ¡5 puntos por botella!</p>
           <AventuraGame />
         </main>
       </div>
