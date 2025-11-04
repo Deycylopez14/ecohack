@@ -137,6 +137,28 @@ function ClasificadorGame() {
         )}
       </div>
 
+      {/* INSTRUCCIONES AL INICIO */}
+      <div className="p-4 rounded-lg" style={{ background: 'var(--color-surface)' }}>
+        <h4 className="font-bold text-lg mb-2">🎮 Cómo jugar el Clasificador de Basura:</h4>
+        <div className="grid md:grid-cols-2 gap-4">
+          <div className="p-3 rounded-lg border-l-4 border-blue-500" style={{ background: 'var(--color-background)' }}>
+            <p className="font-semibold text-blue-600">📱 En móvil/tablet:</p>
+            <p className="text-sm">1. Toca el residuo que quieres clasificar</p>
+            <p className="text-sm">2. Se marcará con ✓ verde</p>
+            <p className="text-sm">3. Toca el contenedor correcto</p>
+            <p className="text-sm">4. ¡Ganas puntos por clasificar bien!</p>
+          </div>
+          
+          <div className="p-3 rounded-lg border-l-4 border-green-500" style={{ background: 'var(--color-background)' }}>
+            <p className="font-semibold text-green-600">💻 En computadora:</p>
+            <p className="text-sm">1. Arrastra el residuo con el mouse</p>
+            <p className="text-sm">2. Suéltalo en el contenedor correcto</p>
+            <p className="text-sm">3. También puedes hacer clic + clic</p>
+            <p className="text-sm">4. ¡Ganas puntos por clasificar bien!</p>
+          </div>
+        </div>
+      </div>
+
       {feedback && (
         <div className="p-3 rounded-lg text-center font-bold" style={{ background: 'var(--color-secondary)', color: 'var(--color-on-secondary)' }}>
           {feedback}
@@ -179,28 +201,7 @@ function ClasificadorGame() {
             ))}
           </div>
 
-          <div className="space-y-3">
-            <div className="p-4 rounded-lg" style={{ background: 'var(--color-surface)' }}>
-              <h4 className="font-bold text-lg mb-2">🎮 Cómo jugar el Clasificador de Basura:</h4>
-              <div className="grid md:grid-cols-2 gap-4">
-                <div className="p-3 rounded-lg border-l-4 border-blue-500" style={{ background: 'var(--color-background)' }}>
-                  <p className="font-semibold text-blue-600">📱 En móvil/tablet:</p>
-                  <p className="text-sm">1. Toca el residuo que quieres clasificar</p>
-                  <p className="text-sm">2. Se marcará con ✓ verde</p>
-                  <p className="text-sm">3. Toca el contenedor correcto</p>
-                  <p className="text-sm">4. ¡Ganas puntos por clasificar bien!</p>
-                </div>
-                
-                <div className="p-3 rounded-lg border-l-4 border-green-500" style={{ background: 'var(--color-background)' }}>
-                  <p className="font-semibold text-green-600">💻 En computadora:</p>
-                  <p className="text-sm">1. Arrastra el residuo con el mouse</p>
-                  <p className="text-sm">2. Suéltalo en el contenedor correcto</p>
-                  <p className="text-sm">3. También puedes hacer clic + clic</p>
-                  <p className="text-sm">4. ¡Ganas puntos por clasificar bien!</p>
-                </div>
-              </div>
-            </div>
-
+          <div className="space-y-2">
             <h3 className="font-bold">
               {isMobile ? 'Selecciona un residuo y luego su contenedor:' : 'Arrastra cada residuo al contenedor correcto:'}
             </h3>
@@ -276,6 +277,11 @@ function AventuraGame() {
   const [obstacles, setObstacles] = React.useState<Obstacle[]>([])
   const [keys, setKeys] = React.useState<Set<string>>(new Set())
   const [isMobile, setIsMobile] = React.useState(false)
+  
+  // Estados para gestos táctiles modernos
+  const [touchStart, setTouchStart] = React.useState<{x: number, y: number, time: number} | null>(null)
+  const [lastTap, setLastTap] = React.useState<number>(0)
+  const [moveDirection, setMoveDirection] = React.useState<'left' | 'right' | null>(null)
 
   const CANVAS_WIDTH = 800
   const CANVAS_HEIGHT = 400
@@ -356,6 +362,71 @@ function AventuraGame() {
     }), 200)
   }
 
+  // === GESTOS TÁCTILES MODERNOS ===
+  const handleTouchStart = (e: React.TouchEvent) => {
+    e.preventDefault()
+    const touch = e.touches[0]
+    const currentTime = Date.now()
+    
+    setTouchStart({
+      x: touch.clientX,
+      y: touch.clientY,
+      time: currentTime
+    })
+
+    // Detectar doble tap para saltar
+    if (currentTime - lastTap < 300) {
+      jump()
+      setLastTap(0)
+    } else {
+      setLastTap(currentTime)
+    }
+  }
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    e.preventDefault()
+    if (!touchStart || !gameActive) return
+
+    const touch = e.touches[0]
+    const deltaX = touch.clientX - touchStart.x
+    const deltaY = touch.clientY - touchStart.y
+    
+    // Solo procesar swipes horizontales significativos
+    if (Math.abs(deltaX) > 30 && Math.abs(deltaX) > Math.abs(deltaY)) {
+      if (deltaX > 0 && moveDirection !== 'right') {
+        setMoveDirection('right')
+        setKeys(prev => {
+          const newKeys = new Set(prev)
+          newKeys.delete('ArrowLeft')
+          newKeys.add('ArrowRight')
+          return newKeys
+        })
+      } else if (deltaX < 0 && moveDirection !== 'left') {
+        setMoveDirection('left')
+        setKeys(prev => {
+          const newKeys = new Set(prev)
+          newKeys.delete('ArrowRight')
+          newKeys.add('ArrowLeft')
+          return newKeys
+        })
+      }
+    }
+  }
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    e.preventDefault()
+    setTouchStart(null)
+    setMoveDirection(null)
+    
+    // Detener movimiento
+    setKeys(prev => {
+      const newKeys = new Set(prev)
+      newKeys.delete('ArrowLeft')
+      newKeys.delete('ArrowRight')
+      return newKeys
+    })
+  }
+
   // Game physics and update
   const updateGame = React.useCallback(() => {
     if (!gameActive || gameOver) return
@@ -431,7 +502,7 @@ function AventuraGame() {
     }
   }, [gameActive, gameOver, keys, player, obstacles, endGame, generateBottle, generateObstacle])
 
-  // Render game
+  // Render game - Versión mejorada y más bonita
   const render = React.useCallback(() => {
     const canvas = canvasRef.current
     if (!canvas) return
@@ -439,54 +510,114 @@ function AventuraGame() {
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    // Clear canvas
-    ctx.fillStyle = '#87CEEB'
+    // Gradient sky background
+    const gradient = ctx.createLinearGradient(0, 0, 0, CANVAS_HEIGHT)
+    gradient.addColorStop(0, '#87CEEB')
+    gradient.addColorStop(0.7, '#98E4FF')
+    gradient.addColorStop(1, '#B0E0E6')
+    ctx.fillStyle = gradient
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
 
-    // Draw ground
-    ctx.fillStyle = '#228B22'
+    // Draw clouds
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)'
+    for (let i = 0; i < 3; i++) {
+      const x = (Date.now() * 0.01 + i * 200) % (CANVAS_WIDTH + 100) - 50
+      ctx.beginPath()
+      ctx.arc(x, 80 + i * 40, 25, 0, Math.PI * 2)
+      ctx.arc(x + 25, 80 + i * 40, 35, 0, Math.PI * 2)
+      ctx.arc(x + 50, 80 + i * 40, 25, 0, Math.PI * 2)
+      ctx.fill()
+    }
+
+    // Ground with grass pattern
+    const groundGradient = ctx.createLinearGradient(0, GROUND_Y, 0, GROUND_Y + 50)
+    groundGradient.addColorStop(0, '#32CD32')
+    groundGradient.addColorStop(1, '#228B22')
+    ctx.fillStyle = groundGradient
     ctx.fillRect(0, GROUND_Y, CANVAS_WIDTH, 50)
 
-    // Draw player
-    ctx.fillStyle = '#FFD700'
-    ctx.fillRect(player.x, player.y, 40, 40)
-    ctx.fillStyle = '#000'
-    ctx.font = '20px Arial'
-    ctx.textAlign = 'center'
-    ctx.fillText('🚶', player.x + 20, player.y + 25)
+    // Grass details
+    ctx.fillStyle = '#90EE90'
+    for (let i = 0; i < CANVAS_WIDTH; i += 20) {
+      ctx.fillRect(i, GROUND_Y - 5, 2, 8)
+      ctx.fillRect(i + 10, GROUND_Y - 3, 2, 6)
+    }
 
-    // Draw bottles
+    // Player with shadow and better graphics
+    const playerShadow = ctx.createRadialGradient(player.x + 20, GROUND_Y, 0, player.x + 20, GROUND_Y, 25)
+    playerShadow.addColorStop(0, 'rgba(0, 0, 0, 0.3)')
+    playerShadow.addColorStop(1, 'rgba(0, 0, 0, 0)')
+    ctx.fillStyle = playerShadow
+    ctx.fillRect(player.x - 5, GROUND_Y - 5, 50, 10)
+
+    // Player body
+    ctx.fillStyle = '#4169E1'
+    ctx.fillRect(player.x + 5, player.y + 15, 30, 25)
+    
+    // Player head
+    ctx.fillStyle = '#FFE4B5'
+    ctx.beginPath()
+    ctx.arc(player.x + 20, player.y + 10, 12, 0, Math.PI * 2)
+    ctx.fill()
+    
+    // Player emoji face
+    ctx.font = 'bold 16px Arial'
+    ctx.textAlign = 'center'
+    ctx.fillStyle = '#000'
+    ctx.fillText('😊', player.x + 20, player.y + 15)
+
+    // Bottles with glow effect
     bottles.forEach(bottle => {
       if (!bottle.collected) {
+        // Glow effect
+        const glowGradient = ctx.createRadialGradient(bottle.x + 15, bottle.y + 15, 0, bottle.x + 15, bottle.y + 15, 25)
+        glowGradient.addColorStop(0, 'rgba(0, 255, 255, 0.4)')
+        glowGradient.addColorStop(1, 'rgba(0, 255, 255, 0)')
+        ctx.fillStyle = glowGradient
+        ctx.fillRect(bottle.x - 10, bottle.y - 10, 50, 50)
+        
+        // Bottle
         ctx.fillStyle = '#00CED1'
-        ctx.fillRect(bottle.x, bottle.y, 25, 25)
-        ctx.fillStyle = '#000'
-        ctx.font = '16px Arial'
-        ctx.textAlign = 'center'
-        ctx.fillText('🍼', bottle.x + 12, bottle.y + 18)
+        ctx.fillRect(bottle.x, bottle.y, 30, 30)
+        ctx.font = 'bold 20px Arial'
+        ctx.fillStyle = '#FFF'
+        ctx.fillText('🍼', bottle.x + 15, bottle.y + 22)
       }
     })
 
-    // Draw obstacles
+    // Obstacles with better graphics
     obstacles.forEach(obstacle => {
+      // Shadow
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.2)'
+      ctx.fillRect(obstacle.x + 5, GROUND_Y - 2, obstacle.width, 5)
+      
+      // Obstacle
       ctx.fillStyle = '#8B4513'
       ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height)
-      ctx.fillStyle = '#000'
-      ctx.font = '16px Arial'
+      ctx.font = 'bold 30px Arial'
+      ctx.fillStyle = '#654321'
       ctx.textAlign = 'center'
-      ctx.fillText('🗑️', obstacle.x + 15, obstacle.y + 25)
+      ctx.fillText('🗑️', obstacle.x + obstacle.width/2, obstacle.y + obstacle.height/2 + 10)
     })
 
-    // Draw UI
-    ctx.fillStyle = '#000'
-    ctx.font = 'bold 20px Arial'
-    ctx.textAlign = 'left'
-    ctx.fillText(`Puntos: ${score}`, 10, 30)
+    // Score and effects
+    if (gameActive) {
+      ctx.font = 'bold 20px Arial'
+      ctx.fillStyle = '#FFD700'
+      ctx.strokeStyle = '#000'
+      ctx.lineWidth = 2
+      ctx.textAlign = 'left'
+      ctx.strokeText(`Puntos: ${score}`, 20, 40)
+      ctx.fillText(`Puntos: ${score}`, 20, 40)
+    }
     
+    // Draw UI for desktop
     if (!isMobile) {
+      ctx.fillStyle = '#000'
+      ctx.font = 'bold 16px Arial'
       ctx.fillText('Usa ←→ para moverte, ESPACIO para saltar', 10, CANVAS_HEIGHT - 10)
     }
-  }, [player, bottles, obstacles, score, isMobile])
+  }, [player, bottles, obstacles, score, gameActive, isMobile])
 
   // Keyboard handlers para desktop
   React.useEffect(() => {
@@ -543,46 +674,7 @@ function AventuraGame() {
         )}
       </div>
 
-      <div className="border-2 rounded-lg overflow-hidden" style={{ borderColor: 'var(--color-border)' }}>
-        <canvas
-          ref={canvasRef}
-          width={CANVAS_WIDTH}
-          height={CANVAS_HEIGHT}
-          className="block max-w-full h-auto"
-          style={{ background: '#87CEEB' }}
-        />
-      </div>
-
-      {/* CONTROLES MÓVILES */}
-      {isMobile && gameActive && (
-        <div className="grid grid-cols-3 gap-4 max-w-sm mx-auto">
-          <button
-            onTouchStart={moveLeft}
-            onMouseDown={moveLeft}
-            className="bg-blue-500 text-white p-4 rounded-lg text-2xl font-bold active:scale-95 transition-transform"
-            style={{ touchAction: 'manipulation' }}
-          >
-            ⬅️
-          </button>
-          <button
-            onTouchStart={jump}
-            onMouseDown={jump}
-            className="bg-green-500 text-white p-4 rounded-lg text-2xl font-bold active:scale-95 transition-transform"
-            style={{ touchAction: 'manipulation' }}
-          >
-            ⬆️ SALTO
-          </button>
-          <button
-            onTouchStart={moveRight}
-            onMouseDown={moveRight}
-            className="bg-blue-500 text-white p-4 rounded-lg text-2xl font-bold active:scale-95 transition-transform"
-            style={{ touchAction: 'manipulation' }}
-          >
-            ➡️
-          </button>
-        </div>
-      )}
-
+      {/* INSTRUCCIONES AL INICIO */}
       <div className="text-sm space-y-2" style={{ color: 'var(--color-text-secondary)' }}>
         <p className="font-semibold">🎮 Cómo jugar:</p>
         <p>• 🍼 Recoge botellas para ganar 5 puntos cada una</p>
@@ -590,10 +682,11 @@ function AventuraGame() {
         
         <div className="grid md:grid-cols-2 gap-4 mt-3">
           <div className="p-3 rounded-lg" style={{ background: 'var(--color-surface)' }}>
-            <p className="font-semibold text-blue-600">📱 En móvil/tablet:</p>
-            <p>• Usa los botones táctiles grandes</p>
-            <p>• ⬅️ ➡️ para moverte</p>
-            <p>• ⬆️ SALTO para saltar obstáculos</p>
+            <p className="font-semibold text-blue-600">📱 Controles modernos móvil:</p>
+            <p>• 👆 <strong>Doble tap</strong> en pantalla para saltar</p>
+            <p>• 👈 <strong>Swipe izquierda</strong> para ir a la izquierda</p>
+            <p>• 👉 <strong>Swipe derecha</strong> para ir a la derecha</p>
+            <p>• 🎮 También botones táctiles disponibles</p>
           </div>
           
           <div className="p-3 rounded-lg" style={{ background: 'var(--color-surface)' }}>
@@ -604,10 +697,77 @@ function AventuraGame() {
           </div>
         </div>
       </div>
+
+      <div className="border-2 rounded-lg overflow-hidden shadow-lg" style={{ borderColor: 'var(--color-border)' }}>
+        <canvas
+          ref={canvasRef}
+          width={CANVAS_WIDTH}
+          height={CANVAS_HEIGHT}
+          className="block max-w-full h-auto cursor-pointer"
+          style={{ background: 'linear-gradient(to bottom, #87CEEB, #98E4FF)' }}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          onClick={isMobile ? jump : undefined}
+        />
+      </div>
+
+      {/* INDICADOR DE GESTOS PARA MÓVIL */}
+      {isMobile && gameActive && (
+        <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-3 rounded-lg text-center">
+          <p className="font-bold">🎮 Gestos Activos</p>
+          <p className="text-sm">👈 Swipe | 👆 Doble Tap para saltar | 👉 Swipe</p>
+        </div>
+      )}
+
+      {/* CONTROLES MÓVILES ALTERNATIVOS */}
+      {isMobile && gameActive && (
+        <div className="space-y-3">
+          <div className="text-center">
+            <p className="text-sm font-medium text-gray-600">🎮 Controles Alternativos (opcional)</p>
+          </div>
+          <div className="grid grid-cols-3 gap-4 max-w-sm mx-auto">
+            <button
+              onTouchStart={moveLeft}
+              onMouseDown={moveLeft}
+              className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-4 rounded-xl text-2xl font-bold active:scale-95 transition-all shadow-lg hover:shadow-xl"
+              style={{ touchAction: 'manipulation' }}
+            >
+              <div className="flex flex-col items-center">
+                <span>⬅️</span>
+                <span className="text-xs mt-1">IZQUIERDA</span>
+              </div>
+            </button>
+            <button
+              onTouchStart={jump}
+              onMouseDown={jump}
+              className="bg-gradient-to-r from-green-500 to-green-600 text-white p-4 rounded-xl text-2xl font-bold active:scale-95 transition-all shadow-lg hover:shadow-xl"
+              style={{ touchAction: 'manipulation' }}
+            >
+              <div className="flex flex-col items-center">
+                <span>🚀</span>
+                <span className="text-xs mt-1">SALTO</span>
+              </div>
+            </button>
+            <button
+              onTouchStart={moveRight}
+              onMouseDown={moveRight}
+              className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-4 rounded-xl text-2xl font-bold active:scale-95 transition-all shadow-lg hover:shadow-xl"
+              style={{ touchAction: 'manipulation' }}
+            >
+              <div className="flex flex-col items-center">
+                <span>➡️</span>
+                <span className="text-xs mt-1">DERECHA</span>
+              </div>
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
 
+// === COMPONENTE PRINCIPAL JUEGOS ===
 export default function Juegos() {
   const [currentGame, setCurrentGame] = React.useState<'menu' | 'clasificador' | 'aventura'>('menu')
 
@@ -644,7 +804,7 @@ export default function Juegos() {
   return (
     <div className="min-h-screen pb-16" style={{ background: 'var(--color-bg)', color: 'var(--color-text)' }} role="main">
       <header className="flex items-center gap-2 p-4 border-b" role="banner" style={{ background: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
-  <img src="/icons/ecohack.png" alt="Logo EcoHack" className="w-10 h-10" />
+        <img src="/icons/ecohack.png" alt="Logo EcoHack" className="w-10 h-10" />
         <span className="font-bold text-xl" style={{letterSpacing: '1px'}}>EcoHack</span>
       </header>
       <main className="p-4" tabIndex={0} aria-label="Mini-Juegos">
