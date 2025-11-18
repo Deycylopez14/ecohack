@@ -54,7 +54,7 @@ export default function Comunidad() {
         {/* Bienvenida y estadísticas */}
         <div className="text-center py-6">
           <h1 className="text-3xl font-bold mb-2" style={{ color: 'var(--color-primary)' }}>
-            🌱 Comunidad EcoHack
+            🌱 Comunidad EcoHack - ACTUALIZADA ✅
           </h1>
           <p className="text-lg mb-4" style={{ color: 'var(--color-text-secondary)' }}>
             Comparte tus logros ecológicos y conecta con otros eco-warriors
