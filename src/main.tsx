@@ -12,8 +12,10 @@ import Perfil from './pages/Perfil'
 import NavBar from './components/NavBar'
 import ThemeToggle from './components/ThemeToggle'
 import PointsNotification from './components/PointsNotification'
+import InstallPrompt from './components/InstallPrompt'
 import Educacion from './pages/Educacion'
 import Gamificacion from './pages/Gamificacion'
+import InstallInstructions from './pages/InstallInstructions'
 import { GamificationProvider } from './contexts/GamificationContext'
 import './styles/index.css'
 
@@ -24,6 +26,7 @@ function AppLayout() {
     <>
       <ThemeToggle />
       <PointsNotification />
+      <InstallPrompt />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/home" element={<Home />} />
@@ -35,6 +38,7 @@ function AppLayout() {
         <Route path="/perfil" element={<Perfil />} />
         <Route path="/educacion" element={<Educacion />} />
         <Route path="/gamificacion" element={<Gamificacion />} />
+        <Route path="/install" element={<InstallInstructions />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
       </Routes>

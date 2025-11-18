@@ -4,8 +4,17 @@
   "private": true,
   "scripts": {
     "dev": "vite",
+    "dev:https": "vite --host --port 3000",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "preview:https": "vite preview --https",
+    "build:pwa": "vite build && echo PWA build completed",
+    "serve": "npx serve dist --single --listen 3000",
+    "serve:https": "npx serve dist --single --listen 3000 --ssl",
+    "pwa:test": "npm run build:pwa && npm run serve",
+    "pwa:test:https": "npm run build:pwa && npm run serve:https",
+    "setup:https": "setup-https.bat",
+    "tunnel": "start-https-tunnel.bat"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.76.1",
@@ -15,6 +24,7 @@
     "leaflet": "^1.9.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-icons": "^5.5.0",
     "react-leaflet": "^4.2.1",
     "react-router-dom": "^6.12.1"
   },
