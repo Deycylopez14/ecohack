@@ -1,7 +1,6 @@
 import React, { useEffect } from 'react'
 import PostCard from '../components/PostCard'
 import CreatePost from '../components/CreatePost'
-import SupabaseDebug from '../components/SupabaseDebug'
 import { usePosts, useCurrentUser } from '../hooks/useCommunity'
 import { useGamification } from '../contexts/GamificationContext'
 
@@ -77,8 +76,7 @@ export default function Comunidad() {
           )}
         </div>
 
-        {/* Debug de Supabase (temporal) */}
-        <SupabaseDebug />
+
 
         {/* Formulario para crear post */}
         <CreatePost 
