@@ -353,9 +353,9 @@ export const integradorAPIs = new IntegradorAPIsOficiales();
 // Función helper para obtener centros combinados (locales + APIs)
 export async function obtenerCentrosCombinados(estado: string): Promise<CentroReciclaje[]> {
   try {
-    // Importar centros locales (ya están en formato CentroReciclaje)
-    const { obtenerCentrosPorEstado } = await import('../data/centrosReciclajeMexico');
-    const centrosLocales = obtenerCentrosPorEstado(estado);
+    // Importar centros locales de forma estática
+    const centrosModule = await import('../data/centrosReciclajeMexico');
+    const centrosLocales = centrosModule.obtenerCentrosPorEstado(estado);
     
     // Obtener centros de APIs oficiales
     const centrosOficiales = await integradorAPIs.obtenerTodosCentrosOficiales(estado);
@@ -377,8 +377,13 @@ export async function obtenerCentrosCombinados(estado: string): Promise<CentroRe
   } catch (error) {
     console.error('Error obteniendo centros combinados:', error);
     // Fallback a solo centros locales
-    const { obtenerCentrosPorEstado } = await import('../data/centrosReciclajeMexico');
-    return obtenerCentrosPorEstado(estado);
+    try {
+      const centrosModule = await import('../data/centrosReciclajeMexico');
+      return centrosModule.obtenerCentrosPorEstado(estado);
+    } catch (fallbackError) {
+      console.error('Error en fallback:', fallbackError);
+      return [];
+    }
   }
 }
 

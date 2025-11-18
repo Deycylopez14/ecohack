@@ -91,38 +91,19 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
     try {
       // Sistema robusto de identificación de usuario para cross-device
       let userId = 'ecohack_user_default'
-      let userInfo = null
       
-      try {
-        const { supabase } = await import('../lib/supabase')
-        const { data } = await supabase.auth.getUser()
-        if (data.user?.email) {
-          userId = data.user.email
-          userInfo = data.user
-        } else if (data.user?.id) {
-          userId = data.user.id
-          userInfo = data.user
-        }
-      } catch (authError) {
-        console.log('No se pudo obtener usuario desde auth, usando fallback')
-      }
-
       // Buscar datos en múltiples keys posibles para máxima compatibilidad
       const possibleKeys = [
         `totalPoints_${userId}`,
-        userInfo?.email ? `totalPoints_${userInfo.email}` : null,
-        userInfo?.id ? `totalPoints_${userInfo.id}` : null,
         'totalPoints_ecohack_user_default',
         'totalPoints_default'
-      ].filter(Boolean)
+      ]
 
       const possibleProfileKeys = [
         `profileData_${userId}`,
-        userInfo?.email ? `profileData_${userInfo.email}` : null,
-        userInfo?.id ? `profileData_${userInfo.id}` : null,
         'profileData_ecohack_user_default',
         'profileData_default'
-      ].filter(Boolean)
+      ]
 
       let savedPoints = null
       let foundPointsKey = null

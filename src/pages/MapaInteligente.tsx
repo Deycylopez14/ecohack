@@ -2,16 +2,76 @@ import React from 'react'
 import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 
-// Importar la nueva base de datos completa y servicios
-import { 
-  CENTROS_RECICLAJE_MEXICO, 
-  ESTADOS_MEXICO, 
-  COORDENADAS_ESTADOS,
-  obtenerCentrosPorEstado,
-  buscarCentros
-} from '../data/centrosReciclajeMexico'
+// Importar solo los tipos y funciones utilitarias
 import { detectorUbicacion, UbicacionDetectada } from '../utils/detectorUbicacion'
 import { obtenerCentrosCombinados } from '../services/apisOficiales'
+
+// Tipo para centros de reciclaje (importado dinámicamente)
+interface CentroReciclaje {
+  id: string;
+  nombre: string;
+  direccion: string;
+  ciudad: string;
+  estado: string;
+  latitud: number;
+  longitud: number;
+  telefono?: string;
+  horarios?: any;
+  materialesAceptados: string[];
+  tiposCentro: string[];
+  serviciosAdicionales?: string[];
+  paganPorMaterial: boolean;
+  verificado: boolean;
+  fuente: string;
+  fechaActualizacion: string;
+}
+
+// Estados de México
+const ESTADOS_MEXICO = [
+  'Aguascalientes', 'Baja California', 'Baja California Sur', 'Campeche', 
+  'Chiapas', 'Chihuahua', 'Ciudad de México', 'Coahuila', 'Colima', 
+  'Durango', 'Estado de México', 'Guanajuato', 'Guerrero', 'Hidalgo', 
+  'Jalisco', 'Michoacán', 'Morelos', 'Nayarit', 'Nuevo León', 'Oaxaca', 
+  'Puebla', 'Querétaro', 'Quintana Roo', 'San Luis Potosí', 'Sinaloa', 
+  'Sonora', 'Tabasco', 'Tamaulipas', 'Tlaxcala', 'Veracruz', 'Yucatán', 
+  'Zacatecas'
+]
+
+// Coordenadas centrales de cada estado
+const COORDENADAS_ESTADOS: { [key: string]: [number, number] } = {
+  'Aguascalientes': [21.8795, -102.2904],
+  'Baja California': [30.8406, -115.2838],
+  'Baja California Sur': [26.0444, -111.6660],
+  'Campeche': [19.8454, -90.5284],
+  'Chiapas': [16.2531, -92.1292],
+  'Chihuahua': [28.6353, -106.0889],
+  'Ciudad de México': [19.4326, -99.1332],
+  'Coahuila': [27.0587, -101.7068],
+  'Colima': [19.2452, -103.7240],
+  'Durango': [24.0277, -104.6532],
+  'Estado de México': [19.3564, -99.6568],
+  'Guanajuato': [21.0190, -101.2574],
+  'Guerrero': [17.4392, -99.5451],
+  'Hidalgo': [20.0910, -98.7624],
+  'Jalisco': [20.6597, -103.3496],
+  'Michoacán': [19.7006, -101.1865],
+  'Morelos': [18.6813, -99.1013],
+  'Nayarit': [21.7514, -104.8455],
+  'Nuevo León': [25.5922, -99.9962],
+  'Oaxaca': [17.0732, -96.7266],
+  'Puebla': [19.0414, -98.2063],
+  'Querétaro': [20.5888, -100.3899],
+  'Quintana Roo': [19.1817, -88.4791],
+  'San Luis Potosí': [22.1565, -100.9855],
+  'Sinaloa': [24.8060, -107.3940],
+  'Sonora': [29.2972, -110.3309],
+  'Tabasco': [17.8409, -92.6189],
+  'Tamaulipas': [24.2669, -98.8363],
+  'Tlaxcala': [19.3139, -98.2404],
+  'Veracruz': [19.1738, -96.1342],
+  'Yucatán': [20.7099, -89.0943],
+  'Zacatecas': [22.7709, -102.5832]
+}
 
 // Base de datos expandida de centros por estado/ciudad (mantenemos la anterior como fallback)
 const centrosPorEstadoLegacy: { [key: string]: any[] } = {
@@ -604,15 +664,18 @@ export default function MapaInteligente() {
       console.log('🚀 Iniciando carga de centros...');
       
       try {
+        // Cargar módulo de centros de forma dinámica
+        const centrosModule = await import('../data/centrosReciclajeMexico')
+        
         // Combinar centros locales con legacy
-        const centrosNuevos = Object.values(CENTROS_RECICLAJE_MEXICO).flat()
+        const centrosNuevos = Object.values(centrosModule.CENTROS_RECICLAJE_MEXICO).flat()
         const centrosLegacy = Object.values(centrosPorEstadoLegacy).flat()
         
         console.log(`📊 Centros nuevos encontrados: ${centrosNuevos.length}`);
         console.log(`📊 Centros legacy encontrados: ${centrosLegacy.length}`);
         
         // Convertir centros nuevos al formato legacy para compatibilidad
-        const centrosNuevosConvertidos = centrosNuevos.map(centro => {
+        const centrosNuevosConvertidos = centrosNuevos.map((centro: any) => {
           const centroConvertido = {
             id: centro.id,
             name: centro.nombre,
@@ -625,7 +688,7 @@ export default function MapaInteligente() {
             hours: typeof centro.horarios === 'string' ? centro.horarios : 
                    Object.entries(centro.horarios).map(([dia, hora]) => `${dia}: ${hora}`).join(', '),
             phone: centro.telefono || 'No disponible',
-            description: `${centro.serviciosAdicionales.join(', ')} - Fuente: ${centro.fuente}`,
+            description: `${centro.serviciosAdicionales?.join(', ') || 'Sin servicios adicionales'} - Fuente: ${centro.fuente}`,
             ciudad: centro.ciudad,
             fuente: centro.fuente,
             paganPorMaterial: centro.paganPorMaterial
@@ -748,8 +811,8 @@ export default function MapaInteligente() {
       // Cambiar el centro del mapa usando las coordenadas oficiales
       const coordsEstado = COORDENADAS_ESTADOS[nuevaRegion as keyof typeof COORDENADAS_ESTADOS]
       if (coordsEstado) {
-        setPosition([coordsEstado.lat, coordsEstado.lng])
-        console.log(`📍 Centrando mapa en coordenadas de ${nuevaRegion}: [${coordsEstado.lat}, ${coordsEstado.lng}]`);
+        setPosition([coordsEstado[0], coordsEstado[1]])
+        console.log(`📍 Centrando mapa en coordenadas de ${nuevaRegion}: [${coordsEstado[0]}, ${coordsEstado[1]}]`);
       } else if (centrosRegion.length > 0) {
         setPosition(centrosRegion[0].coords)
         console.log(`📍 Centrando mapa en primer centro: [${centrosRegion[0].coords}]`);

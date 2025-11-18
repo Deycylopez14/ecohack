@@ -5,12 +5,17 @@
   "theme_color": "#047857",
   "background_color": "#f3f4f6",
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
   "scope": "/",
   "start_url": "/",
   "orientation": "any",
   "categories": ["education", "lifestyle", "games", "utilities"],
   "lang": "es-ES",
   "prefer_related_applications": false,
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
+  "protocol_handlers": [],
   "id": "ecohack-app",
   "icons": [
     {
