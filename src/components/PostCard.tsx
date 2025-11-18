@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { Post } from '../hooks/useCommunity'
+import CommentsSection from './CommentsSection'
 
 interface PostCardProps {
   post: Post
@@ -232,17 +233,10 @@ export default function PostCard({ post, onLike, onComment, onShare }: PostCardP
 
       {/* Sección de comentarios */}
       {showComments && (
-        <div 
-          className="mt-3 pt-3 border-t"
-          style={{ borderColor: 'var(--color-border)' }}
-        >
-          <p 
-            className="text-sm text-center"
-            style={{ color: 'var(--color-text-secondary)' }}
-          >
-            💬 Sección de comentarios próximamente...
-          </p>
-        </div>
+        <CommentsSection 
+          postId={post.id}
+          onClose={() => setShowComments(false)}
+        />
       )}
     </div>
   )

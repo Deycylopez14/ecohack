@@ -42,6 +42,9 @@ export interface Comment {
   full_name?: string
   avatar_url?: string
   eco_level?: string
+  user_has_reacted?: boolean
+  // Respuestas anidadas
+  replies?: Comment[]
 }
 
 export interface Notification {
@@ -395,33 +398,232 @@ export function usePosts() {
   }
 }
 
-// Hook para gestionar comentarios (simplificado para demo)
+// Hook para gestionar comentarios
 export function useComments(postId: string) {
   const [comments, setComments] = useState<Comment[]>([])
   const [loading, setLoading] = useState(false)
 
+  // Datos de ejemplo para comentarios
+  const mockComments: Comment[] = [
+    {
+      id: '1',
+      post_id: postId,
+      user_id: 'user1',
+      content: '¡Excelente iniciativa! Me parece genial que estemos creando una comunidad tan comprometida con el medio ambiente. 🌱',
+      likes_count: 5,
+      created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+      full_name: 'Ana García',
+      eco_level: 'Experto',
+      user_has_reacted: false,
+      replies: [
+        {
+          id: '1-1',
+          post_id: postId,
+          user_id: 'user2',
+          parent_id: '1',
+          content: '¡Totalmente de acuerdo! Juntos podemos lograr mucho más 💪',
+          likes_count: 2,
+          created_at: new Date(Date.now() - 1.5 * 60 * 60 * 1000).toISOString(),
+          full_name: 'Carlos Mendoza',
+          eco_level: 'Intermedio',
+          user_has_reacted: true
+        }
+      ]
+    },
+    {
+      id: '2',
+      post_id: postId,
+      user_id: 'user3',
+      content: '¿Alguien tiene tips para principiantes? Quiero empezar pero no sé por dónde.',
+      likes_count: 3,
+      created_at: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
+      full_name: 'María López',
+      eco_level: 'Principiante',
+      user_has_reacted: false,
+      replies: []
+    }
+  ]
+
   const fetchComments = async () => {
     setLoading(true)
-    // Por ahora, comentarios demo vacíos
-    setComments([])
+    
+    try {
+      // Intentar cargar desde Supabase
+      const { data, error } = await supabase
+        .from('comments')
+        .select(`
+          *,
+          profiles:user_id(full_name, avatar_url, eco_level)
+        `)
+        .eq('post_id', postId)
+        .is('parent_id', null)
+        .order('created_at', { ascending: true })
+
+      if (!error && data && data.length > 0) {
+        // Procesar comentarios y obtener respuestas
+        const commentsWithReplies = await Promise.all(
+          data.map(async (comment) => {
+            const { data: replies } = await supabase
+              .from('comments')
+              .select(`
+                *,
+                profiles:user_id(full_name, avatar_url, eco_level)
+              `)
+              .eq('parent_id', comment.id)
+              .order('created_at', { ascending: true })
+
+            return {
+              ...comment,
+              full_name: comment.profiles?.full_name,
+              avatar_url: comment.profiles?.avatar_url,
+              eco_level: comment.profiles?.eco_level,
+              replies: replies?.map(reply => ({
+                ...reply,
+                full_name: reply.profiles?.full_name,
+                avatar_url: reply.profiles?.avatar_url,
+                eco_level: reply.profiles?.eco_level,
+                user_has_reacted: false // TODO: Implementar check de reacciones
+              })) || []
+            }
+          })
+        )
+
+        setComments(commentsWithReplies)
+      } else {
+        // Usar datos demo si no hay datos reales
+        setComments(mockComments)
+      }
+    } catch (error) {
+      console.warn('[EcoHack] Usando datos demo para comentarios:', error)
+      setComments(mockComments)
+    }
+    
     setLoading(false)
   }
 
   const addComment = async (content: string, parentId?: string) => {
-    // Agregar comentario demo
-    const newComment: Comment = {
-      id: Date.now().toString(),
-      post_id: postId,
-      user_id: 'demo-user',
-      content,
-      parent_id: parentId,
-      likes_count: 0,
-      created_at: new Date().toISOString(),
-      full_name: 'Usuario Demo',
-      eco_level: 'Principiante'
+    try {
+      const { data: user } = await supabase.auth.getUser()
+      
+      if (user.user) {
+        // Intentar crear en Supabase
+        const { data, error } = await supabase
+          .from('comments')
+          .insert({
+            post_id: postId,
+            user_id: user.user.id,
+            parent_id: parentId,
+            content
+          })
+          .select()
+          .single()
+
+        if (!error && data) {
+          await fetchComments() // Refrescar comentarios
+          return data
+        }
+      }
+
+      // Fallback: agregar comentario demo
+      const newComment: Comment = {
+        id: Date.now().toString(),
+        post_id: postId,
+        user_id: user.user?.id || 'demo-user',
+        content,
+        parent_id: parentId,
+        likes_count: 0,
+        created_at: new Date().toISOString(),
+        full_name: user.user ? 'Tu Usuario' : 'Usuario Demo',
+        eco_level: 'Intermedio',
+        user_has_reacted: false,
+        replies: []
+      }
+
+      if (parentId) {
+        // Es una respuesta
+        setComments(prev => prev.map(comment => {
+          if (comment.id === parentId) {
+            return {
+              ...comment,
+              replies: [...(comment.replies || []), newComment]
+            }
+          }
+          return comment
+        }))
+      } else {
+        // Es un comentario principal
+        setComments(prev => [...prev, newComment])
+      }
+
+      return newComment
+    } catch (error) {
+      console.warn('[EcoHack] Error creando comentario:', error)
+      return null
     }
-    setComments(prev => [...prev, newComment])
-    return newComment
+  }
+
+  const toggleCommentLike = async (commentId: string) => {
+    // Actualizar UI optimísticamente
+    setComments(prev => prev.map(comment => {
+      if (comment.id === commentId) {
+        return {
+          ...comment,
+          likes_count: comment.user_has_reacted ? comment.likes_count - 1 : comment.likes_count + 1,
+          user_has_reacted: !comment.user_has_reacted
+        }
+      }
+      
+      // Revisar también las respuestas
+      if (comment.replies) {
+        return {
+          ...comment,
+          replies: comment.replies.map(reply => {
+            if (reply.id === commentId) {
+              return {
+                ...reply,
+                likes_count: reply.user_has_reacted ? reply.likes_count - 1 : reply.likes_count + 1,
+                user_has_reacted: !reply.user_has_reacted
+              }
+            }
+            return reply
+          })
+        }
+      }
+      
+      return comment
+    }))
+
+    try {
+      const { data: user } = await supabase.auth.getUser()
+      if (!user.user) return
+
+      // Verificar si ya tiene like
+      const { data: existing } = await supabase
+        .from('reactions')
+        .select('id')
+        .eq('user_id', user.user.id)
+        .eq('comment_id', commentId)
+        .single()
+
+      if (existing) {
+        // Quitar like
+        await supabase
+          .from('reactions')
+          .delete()
+          .eq('id', existing.id)
+      } else {
+        // Agregar like
+        await supabase
+          .from('reactions')
+          .insert({
+            user_id: user.user.id,
+            comment_id: commentId,
+            reaction_type: 'like'
+          })
+      }
+    } catch (error) {
+      console.warn('[EcoHack] Error con like de comentario:', error)
+    }
   }
 
   useEffect(() => {
@@ -432,7 +634,8 @@ export function useComments(postId: string) {
     comments,
     loading,
     fetchComments,
-    addComment
+    addComment,
+    toggleCommentLike
   }
 }
 

@@ -29,8 +29,8 @@ export default function Comunidad() {
   }
 
   const handleComment = (postId: string) => {
-    // Por ahora solo mostrar que se abrieron los comentarios
-    console.log('Abrir comentarios para post:', postId)
+    // La funcionalidad de comentarios se maneja directamente en PostCard
+    // Este handler se mantiene para compatibilidad
   }
 
   return (
